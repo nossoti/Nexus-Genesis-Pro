@@ -1,43 +1,1316 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus Core v29.0 — Genesis Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --brand: #ffb347; --dark: #020408; --card: rgba(15, 23, 42, 0.95); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--dark); color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: var(--card); backdrop-filter: blur(15px); border: 1px solid rgba(255,179,71,0.1); }
+        .glass-card { background: #0f172a; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s, box-shadow 0.2s; } 
+        .glass-card:active { cursor: grabbing; transform: scale(0.98); opacity: 0.9; }
+        .glass-card.dragging { opacity: 0.5; border: 1px dashed var(--brand); }
+        
+        input, select, textarea { background: #080c14 !important; border: 1px solid #1e293b !important; color: white !important; padding: 12px; border-radius: 12px; width: 100%; outline: none; transition: 0.2s;}
+        input:focus, textarea:focus, select:focus { border-color: var(--brand) !important; box-shadow: 0 0 10px rgba(255,179,71,0.2); }
+        input[type="file"] { padding: 4px; background: rgba(0,0,0,0.5) !important; border: 1px dashed var(--brand) !important; cursor: pointer; color: #ffb347 !important; font-size: 9px;}
+        input[type="color"] { padding: 0; cursor: pointer; height: 40px; border: none !important;}
+        
+        .btn-mestre { background: var(--brand); color: #000; font-weight: 800; border-radius: 14px; padding: 14px 28px; transition: 0.2s; cursor: pointer; text-transform: uppercase; }
+        .btn-mestre:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .sidebar-item.active { background: rgba(255,179,71,0.1); color: var(--brand); border-right: 4px solid var(--brand); }
+        .tab-btn.active { background: var(--brand); color: black; }
+        .kanban-col { min-width: 340px; transition: background 0.3s; }
+        .kanban-col.drag-over { background: rgba(255,179,71,0.1) !important; border: 1px dashed var(--brand) !important; }
+        .table-row:hover { background: rgba(255,179,71,0.05); cursor: pointer; }
+        
+        .led-red { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; } .led-orange { background-color: #f97316; box-shadow: 0 0 8px #f97316; } .led-yellow { background-color: #eab308; box-shadow: 0 0 8px #eab308; }
+        .loader { border: 3px solid rgba(255,179,71,0.3); border-top: 3px solid var(--brand); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .chk-custom { width: 18px; height: 18px; accent-color: #ffb347; cursor: pointer; }
+        .snippet-btn { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; font-size: 9px; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; white-space: nowrap; } .snippet-btn:hover { background: #ffb347; color: black; border-color: #ffb347; }
+        .badge-pg-pendente { background: rgba(239,68,68,0.1); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: bold; border: 1px solid rgba(239,68,68,0.3);} .badge-pg-parcial { background: rgba(234,179,8,0.1); color: #eab308; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: bold; border: 1px solid rgba(234,179,8,0.3);} .badge-pg-pago { background: rgba(16,185,129,0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: bold; border: 1px solid rgba(16,185,129,0.3);}
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: var(--brand); }
+        .gab-part { display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; color:white; text-shadow: 1px 1px 2px black; border-right: 1px dashed rgba(255,255,255,0.5); background-size: 100% 100%; background-position: center; background-repeat: no-repeat;}
+        
+        .progress-bar-bg { background: rgba(255,255,255,0.1); border-radius: 4px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
+        .progress-bar-fill { background: var(--brand); height: 100%; transition: width 0.3s ease; }
+    </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden">
 
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
+<div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+<div id="login-screen" class="hidden fixed inset-0 z-[2000] flex items-center justify-center bg-black">
+    <div class="glass-panel p-12 rounded-[3rem] w-full max-w-sm text-center shadow-2xl border-brand">
+        <h1 class="text-2xl font-black italic mb-8 uppercase text-[#ffb347]">Nexus <span class="text-white">Genesis Pro</span></h1>
+        <input type="text" id="login-user" placeholder="USUÁRIO" class="text-center mb-4">
+        <input type="password" id="login-pass" placeholder="SENHA" class="text-center mb-4">
+        <button onclick="App.forgotPass()" class="text-[10px] text-gray-400 hover:text-[#ffb347] mb-8 block w-full text-right underline transition">Recuperação / Destravar</button>
+        <button onclick="App.auth()" class="btn-mestre w-full uppercase">Entrar</button>
+    </div>
+</div>
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+<aside class="w-72 border-r border-white/5 flex flex-col p-6 bg-[#010204] relative overflow-hidden">
+    <div class="flex items-center gap-3 mb-6 px-2 z-10" title="Sistema Oficial v29.0">
+        <span class="font-black text-xl italic text-white uppercase tracking-tighter">Nexus <span class="text-[#ffb347]">Core</span></span>
+    </div>
+    
+    <div class="mb-4 z-10 bg-white/5 p-4 rounded-2xl border border-white/10">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nuvem Local Sync</span>
+            <div id="cloud-indicator" class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444]"></div>
+        </div>
+        <p id="cloud-status-text" class="text-[10px] text-red-400 mb-3 font-bold">DESCONECTADO</p>
+        <button onclick="App.connectDrive()" id="btn-connect-cloud" class="w-full py-2 bg-blue-600 text-white text-[9px] font-black rounded-lg uppercase hover:bg-blue-500 transition">Conectar Banco (.json)</button>
+    </div>
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    <div class="mb-4 px-2 text-[10px] text-gray-500 uppercase font-black bg-white/5 p-3 rounded-xl z-10">
+        Operador: <span id="logged-user-name" class="text-[#ffb347]">---</span><br>
+        Acesso: <span id="logged-user-role" class="text-emerald-400">---</span>
+    </div>
 
-jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+    <nav class="flex-1 space-y-1 z-10 overflow-y-auto pr-2 custom-scrollbar">
+        <div onclick="App.nav('dash')" id="m-dash" class="sidebar-item p-4 cursor-pointer rounded-xl active font-bold text-xs uppercase">📊 Dashboard</div>
+        <div onclick="App.nav('clientes')" id="m-clientes" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase text-emerald-400">👥 CRM Clientes</div>
+        <div onclick="App.nav('cronos')" id="m-cronos" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase text-[#ffb347]">⏳ Prazos (Cronos)</div>
+        <div onclick="App.nav('os')" id="m-os" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase">📝 Fluxo Kanban</div>
+        <div onclick="App.nav('fin')" id="m-fin" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase text-yellow-400">💰 Caixa / Despesas</div>
+        <div onclick="App.nav('rh')" id="m-rh" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase text-purple-400">👤 Equipe / RH</div>
+        <div onclick="App.nav('estoque')" id="m-estoque" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase text-blue-400">📦 Almoxarifado</div>
+        <div onclick="App.nav('hist')" id="m-hist" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase">📂 Histórico OS</div>
+        <div onclick="App.nav('tools')" id="m-tools" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-xs uppercase text-emerald-400">🛠️ Oficina Auxílios</div>
+        <div onclick="App.nav('admin')" id="m-admin" class="sidebar-item p-4 cursor-pointer rounded-xl font-bold text-[#ffb347] text-xs uppercase">🛡️ Painel Master</div>
+    </nav>
+    <button onclick="App.logout()" class="mt-4 p-4 text-[10px] font-bold text-red-500 uppercase text-left hover:bg-white/5 rounded-xl w-full z-10">Sair do Sistema</button>
+</aside>
+
+<main class="flex-1 overflow-y-auto p-8 bg-[#03060c] relative" id="main-content">
+    
+    <section id="sec-dash" class="module">
+        <h2 class="text-3xl font-black italic mb-6 uppercase tracking-tighter text-white">Inteligência <span class="text-[#ffb347]">Operacional</span></h2>
+        <div class="grid grid-cols-3 gap-6 mb-6">
+            <div class="col-span-2 glass-panel p-6 rounded-3xl border-l-4 border-blue-500 bg-blue-900/10">
+                <h3 class="text-blue-400 font-bold uppercase text-xs mb-2">⚡ Radar de Entregas (SLA)</h3>
+                <p id="dash-intelligence" class="text-sm text-white font-medium">Analisando dados...</p>
+            </div>
+            <div class="col-span-1 glass-panel p-6 rounded-3xl border-l-4 border-purple-500 bg-purple-900/10 overflow-y-auto max-h-32 custom-scrollbar">
+                <h3 class="text-purple-400 font-bold uppercase text-xs mb-2">🤖 Pós-Venda Automático</h3>
+                <div id="crm-oportunidades" class="text-[10px] text-gray-300 space-y-1">Procurando clientes...</div>
+            </div>
+        </div>
+        <div id="kpi-grid" class="grid grid-cols-5 gap-4 mb-6 text-center"></div>
+        <div class="grid grid-cols-3 gap-6">
+            <div class="glass-panel p-6 rounded-[2rem]"><h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Setores</h4><canvas id="chartSetores"></canvas></div>
+            <div class="glass-panel p-6 rounded-[2rem]"><h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Prazos SLA</h4><canvas id="chartSLA"></canvas></div>
+            <div class="glass-panel p-6 rounded-[2rem]"><h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Fluxo de Caixa</h4><canvas id="chartMeta"></canvas></div>
+        </div>
+    </section>
+
+    <section id="sec-clientes" class="module hidden">
+        <h2 class="text-3xl font-black italic mb-6 uppercase tracking-tighter text-emerald-400">Central <span class="text-white">de Clientes</span></h2>
+        <div class="grid grid-cols-3 gap-6">
+            <div class="glass-panel p-6 rounded-[2rem] space-y-4 col-span-1 h-fit">
+                <h3 class="font-black text-lg text-[#ffb347] uppercase">Cadastrar Novo</h3>
+                <div><label class="text-[10px] text-gray-400 font-bold">NOME / RAZÃO SOCIAL</label><input type="text" id="cad-cli-nome"></div>
+                <div><label class="text-[10px] text-gray-400 font-bold">CPF / CNPJ</label><input type="text" id="cad-cli-doc"></div>
+                <div class="grid grid-cols-2 gap-2"><div><label class="text-[10px] text-gray-400 font-bold">WHATSAPP</label><input type="text" id="cad-cli-tel"></div><div><label class="text-[10px] text-gray-400 font-bold">E-MAIL</label><input type="email" id="cad-cli-email"></div></div>
+                <div><label class="text-[10px] text-gray-400 font-bold">ENDEREÇO (Opcional)</label><input type="text" id="cli-end"></div>
+                <button onclick="App.addCliente()" class="w-full py-3 bg-emerald-500 font-black rounded-xl text-black hover:bg-emerald-400">SALVAR CLIENTE</button>
+            </div>
+            <div class="glass-panel p-6 rounded-[2rem] col-span-2">
+                <div class="flex justify-between items-center mb-4"><h3 class="font-black text-lg text-white uppercase">Banco de Clientes</h3><input type="text" id="busca-cli" placeholder="Buscar..." class="w-1/3 text-xs p-2" onkeyup="App.renderClientes()"></div>
+                <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
+                    <table class="w-full text-left text-[11px] uppercase font-bold"><thead class="bg-white/5 text-gray-400 sticky top-0"><tr><th class="p-3">Nome</th><th>Doc</th><th>Contato</th><th>Ação</th></tr></thead><tbody id="cli-table-body" class="text-white"></tbody></table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-cronos" class="module hidden">
+        <h2 class="text-3xl font-black italic mb-6 uppercase tracking-tighter text-[#ffb347]">Módulo <span class="text-white">Cronos</span></h2>
+        <div class="glass-panel p-8 rounded-[2rem] space-y-4">
+            <h3 class="font-bold text-gray-400 uppercase text-xs border-b border-white/10 pb-2 mb-4">Linha do Tempo Produtiva (O.S. Ativas)</h3>
+            <div id="cronos-list" class="space-y-4 overflow-y-auto max-h-[70vh] pr-4 custom-scrollbar"></div>
+        </div>
+    </section>
+
+    <section id="sec-os" class="module hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-black italic uppercase tracking-tighter text-white">Fluxo <span class="text-[#ffb347]">Vital</span></h2>
+            <button onclick="App.openOSModal()" id="btn-nova-os" class="btn-mestre shadow-lg shadow-orange-500/50">+ NOVA O.S. / ORÇAMENTO</button>
+        </div>
+        <p class="text-[10px] text-gray-500 uppercase font-bold mb-4">💡 Dica: Arraste os cartões para mudar o status rapidamente.</p>
+        <div class="flex gap-4 overflow-x-auto pb-4 h-[75vh] custom-scrollbar" id="kanban-container"></div>
+    </section>
+
+    <section id="sec-fin" class="module hidden">
+        <h2 class="text-3xl font-black italic mb-6 uppercase tracking-tighter text-yellow-400">Financeiro <span class="text-white">& Caixa</span></h2>
+        <div class="grid grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-[2rem] space-y-4 h-fit border border-blue-500/20">
+                <h3 class="font-black text-lg text-blue-400 uppercase border-b border-blue-500/20 pb-2">Lançamento Avulso</h3>
+                <div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] text-gray-400 font-bold">DESCRIÇÃO</label><input type="text" id="fin-desc"></div><div><label class="text-[10px] text-gray-400 font-bold">VALOR (R$)</label><input type="number" step="0.01" id="fin-valor" value="0.00"></div></div>
+                <div class="grid grid-cols-3 gap-4"><div><label class="text-[10px] text-gray-400 font-bold">TIPO</label><select id="fin-tipo"><option value="Entrada">Entrada (+)</option><option value="Saida">Saída (-)</option></select></div><div><label class="text-[10px] text-gray-400 font-bold">CATEGORIA</label><select id="fin-cat"><option value="Serviço/Venda">Serviço/Venda</option><option value="Insumos/Peças">Insumos/Peças</option><option value="Contas Fixas">Contas Fixas</option><option value="Salários">Salários</option><option value="Impostos">Impostos</option></select></div><div><label class="text-[10px] text-gray-400 font-bold">DATA</label><input type="date" id="fin-data"></div></div>
+                <button onclick="App.addDespesa()" class="w-full py-3 bg-blue-500/20 text-blue-400 border border-blue-500/50 font-black rounded-xl hover:bg-blue-500 hover:text-white">REGISTRAR NO CAIXA</button>
+                <div class="overflow-y-auto max-h-48 mt-4 border-t border-white/5 pt-4"><table class="w-full text-left text-[10px] uppercase font-bold"><tbody id="fin-despesas-body" class="text-gray-300"></tbody></table></div>
+            </div>
+            <div class="glass-panel p-6 rounded-[2rem] space-y-4 h-fit border border-purple-500/20">
+                <h3 class="font-black text-lg text-purple-400 uppercase border-b border-purple-500/20 pb-2">Contratos Recorrentes</h3>
+                <div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] text-gray-400 font-bold">CLIENTE</label><input type="text" id="fin-cli-cont"></div><div><label class="text-[10px] text-gray-400 font-bold">VALOR MENSAL (R$)</label><input type="number" step="0.01" id="fin-val-cont" value="0.00"></div></div>
+                <div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] text-gray-400 font-bold">DIA VENCIMENTO</label><input type="number" min="1" max="31" id="fin-dia-cont"></div><div><label class="text-[10px] text-gray-400 font-bold">STATUS</label><select id="fin-status-cont"><option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option></select></div></div>
+                <button onclick="App.addContrato()" class="w-full py-3 bg-purple-500/20 text-purple-400 border border-purple-500/50 font-black rounded-xl hover:bg-purple-500 hover:text-white">CADASTRAR CONTRATO</button>
+                <div class="overflow-y-auto max-h-48 mt-4 border-t border-white/5 pt-4"><table class="w-full text-left text-[10px] uppercase font-bold"><tbody id="fin-contratos-body" class="text-gray-300"></tbody></table></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-rh" class="module hidden">
+        <h2 class="text-3xl font-black italic mb-6 uppercase tracking-tighter text-purple-400">Equipe <span class="text-white">& RH</span></h2>
+        <div class="grid grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-[2rem] space-y-4 h-fit">
+                <h3 class="font-black text-lg text-[#ffb347] uppercase border-b border-white/10 pb-2">Controle de Ponto Digital</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="App.baterPonto('Entrada')" class="py-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 font-black rounded-lg hover:bg-emerald-500 hover:text-black text-[10px]">ENTRADA</button>
+                    <button onclick="App.baterPonto('Ida Almoço')" class="py-3 bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 font-black rounded-lg hover:bg-yellow-500 hover:text-black text-[10px]">ALMOÇO</button>
+                    <button onclick="App.baterPonto('Volta Almoço')" class="py-3 bg-blue-500/20 text-blue-400 border border-blue-500/50 font-black rounded-lg hover:bg-blue-500 hover:text-white text-[10px]">RETORNO</button>
+                    <button onclick="App.baterPonto('Saída')" class="py-3 bg-red-500/20 text-red-500 border border-red-500/50 font-black rounded-lg hover:bg-red-500 hover:text-white text-[10px]">SAÍDA</button>
+                </div>
+                <div class="overflow-y-auto max-h-64 mt-4 border-t border-white/5 pt-4">
+                    <table class="w-full text-left text-[10px] uppercase font-bold">
+                        <thead class="text-gray-500 border-b border-white/10"><tr><th class="pb-2">Data</th><th>Hora</th><th>Registro (Ação)</th></tr></thead>
+                        <tbody id="rh-ponto-list" class="text-gray-300"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass-panel p-6 rounded-[2rem] space-y-4 h-fit">
+                <h3 class="font-black text-lg text-purple-400 uppercase border-b border-purple-500/20 pb-2">Simulador de Comissão (Técnicos/Vendedores)</h3>
+                <div><label class="text-[10px] text-gray-400 font-bold">OPERADOR (Nome exato da O.S.)</label><input type="text" id="rh-com-nome" placeholder="Ex: Jorge Augusto"></div>
+                <div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] text-gray-400 font-bold">MÊS</label><input type="month" id="rh-com-mes"></div><div><label class="text-[10px] text-gray-400 font-bold">COMISSÃO (%)</label><input type="number" id="rh-com-pct" value="10"></div></div>
+                <div class="flex gap-2 mt-2">
+                    <button onclick="App.simularComissao()" class="flex-[2] py-3 bg-white/10 text-white font-black rounded-xl hover:bg-white/20 transition text-xs">SIMULAR VALORES</button>
+                    <button onclick="App.gerarComissaoPDF()" class="flex-1 py-3 bg-purple-500 text-white font-black rounded-xl hover:bg-purple-600 transition text-xs shadow-lg shadow-purple-500/20">GERAR PDF</button>
+                </div>
+                <div id="rh-simulacao-res" class="bg-black/50 p-4 rounded-xl border border-purple-500/30 text-center hidden mt-4">
+                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Resultado da Simulação</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><span class="text-[10px] text-gray-400 block">Total O.S.</span><span id="sim-os-count" class="text-lg font-black text-white">0</span></div>
+                        <div><span class="text-[10px] text-gray-400 block">Faturamento</span><span id="sim-os-fat" class="text-lg font-black text-blue-400">R$ 0</span></div>
+                        <div><span class="text-[10px] text-gray-400 block">A Pagar (Comissão)</span><span id="sim-os-com" class="text-lg font-black text-emerald-400">R$ 0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-estoque" class="module hidden">
+        <h2 class="text-3xl font-black italic mb-6 uppercase tracking-tighter text-emerald-400">Controle <span class="text-white">Almoxarifado</span></h2>
+        <div class="grid grid-cols-3 gap-6">
+            <div class="glass-panel p-6 rounded-[2rem] space-y-4 col-span-1 h-fit">
+                <h3 class="font-black text-lg text-[#ffb347] uppercase">Novo Item</h3>
+                <div><label class="text-[10px] text-gray-400 font-bold">NOME DO MATERIAL</label><input type="text" id="est-nome"></div>
+                <div class="grid grid-cols-2 gap-2"><div><label class="text-[10px] text-gray-400 font-bold">QTD ATUAL</label><input type="number" id="est-qtd" value="0"></div><div><label class="text-[10px] text-gray-400 font-bold">ALERTA MÍNIMO</label><input type="number" id="est-min" value="5"></div></div>
+                <div><label class="text-[10px] text-gray-400 font-bold">PREÇO CUSTO R$</label><input type="number" step="0.01" id="est-preco" value="0.00"></div>
+                <button onclick="App.addEstoque()" class="w-full py-3 bg-emerald-500 font-black rounded-xl text-black hover:bg-emerald-400">SALVAR ITEM</button>
+            </div>
+            <div class="glass-panel p-6 rounded-[2rem] col-span-2">
+                <div class="flex justify-between items-center mb-4"><h3 class="font-black text-lg text-white uppercase">Inventário Atual</h3><div id="est-patrimonio" class="text-xs font-bold text-emerald-400">Patrimônio: R$ 0.00</div></div>
+                <div class="overflow-y-auto max-h-[60vh]">
+                    <table class="w-full text-left text-[11px] uppercase font-bold"><thead class="bg-white/5 text-gray-400 sticky top-0"><tr><th class="p-3">Item</th><th>Qtd</th><th>Alerta</th><th>Custo(R$)</th><th>Ação</th></tr></thead><tbody id="estoque-table-body" class="text-white"></tbody></table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-hist" class="module hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-black italic uppercase tracking-tighter text-white">Prontuários <span class="text-[#ffb347]">& Histórico</span></h2>
+            <div class="w-1/2 flex gap-2">
+                <input type="text" id="hist-search" placeholder="🔍 Buscar OS..." class="flex-1" onkeyup="App.renderHist()">
+                <button onclick="App.gerarDossieCliente()" class="bg-[#ffb347] text-black font-black px-4 rounded-xl text-[10px] hover:bg-orange-400 whitespace-nowrap">GERAR DOSSIÊ DO CLIENTE (PDF)</button>
+            </div>
+        </div>
+        <div class="glass-panel rounded-3xl overflow-hidden max-h-[75vh] overflow-y-auto">
+            <table class="w-full text-left text-[11px] uppercase font-bold"><thead class="bg-white/5 text-gray-400 sticky top-0"><tr><th class="p-4">ID / Data</th><th>Cliente / Contatos</th><th>Projeto / Equipamento</th><th>Status / Pagamento</th><th>Valor Faturado</th></tr></thead><tbody id="hist-table-body" class="text-white"></tbody></table>
+        </div>
+    </section>
+
+    <section id="sec-tools" class="module hidden">
+        <h2 class="text-3xl font-black italic mb-4 uppercase tracking-tighter text-blue-400">Oficina <span class="text-white">Auxílios Pro</span></h2>
+        <div class="flex flex-wrap gap-2 mb-6 border-b border-white/10 pb-4 overflow-x-auto custom-scrollbar">
+            <button onclick="App.navTool('tool-papel', this)" class="tab-btn active px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">📄 Corte Papel</button>
+            <button onclick="App.navTool('tool-lombada', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">📚 Lombada</button>
+            <button onclick="App.navTool('tool-capa', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">📏 Montagem Preps</button>
+            <button onclick="App.navTool('tool-dpi', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">🖼️ Conv/DPI</button>
+            <button onclick="App.navTool('tool-colors', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">🎨 Cores CMYK</button>
+            <button onclick="App.navTool('tool-aurea', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">📐 Prop. Áurea</button>
+            <button onclick="App.navTool('tool-codigos', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">🔗 Códigos QR</button>
+            <button onclick="App.navTool('tool-pass', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">🔐 Senhas</button>
+            <button onclick="App.navTool('tool-links', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">📱 Marketing</button>
+            <button onclick="App.navTool('tool-net', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">🌐 Radar Rede</button>
+            <button onclick="App.navTool('tool-cidr', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">🖥️ IPv4 CIDR</button>
+            <button onclick="App.navTool('tool-bat', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase transition">⚙️ Scripts .BAT</button>
+        </div>
+
+        <div id="tool-papel" class="tool-view"><div class="grid grid-cols-2 gap-6"><div class="glass-panel p-6 rounded-3xl space-y-4"><h3 class="font-black text-lg text-[#ffb347] uppercase">Cálculo de Cortes</h3><div class="flex gap-2 mb-2"><button class="bg-gray-800 text-white px-2 py-1 rounded text-[10px]" onclick="App.setPapel(660,960)">Gráfica (66x96)</button><button class="bg-gray-800 text-white px-2 py-1 rounded text-[10px]" onclick="App.setPapel(210,297)">A4</button><button class="bg-gray-800 text-white px-2 py-1 rounded text-[10px]" onclick="App.setPapel(297,420)">A3</button></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-bold text-gray-400">FOLHA L (mm)</label><input type="number" id="papel-folha-l" value="660"></div><div><label class="text-[10px] font-bold text-gray-400">FOLHA A (mm)</label><input type="number" id="papel-folha-a" value="960"></div><div><label class="text-[10px] font-bold text-gray-400">CORTE L (mm)</label><input type="number" id="papel-corte-l" value="150"></div><div><label class="text-[10px] font-bold text-gray-400">CORTE A (mm)</label><input type="number" id="papel-corte-a" value="210"></div></div><button onclick="App.calcPapel()" class="w-full py-3 bg-blue-500 font-black rounded-xl text-white mt-2">PROCESSAR ENCAIXE</button></div><div class="glass-panel p-6 rounded-3xl" id="print-area-papel"><h3 class="font-black text-lg text-[#ffb347] uppercase mb-2">Relatório de Corte</h3><div id="res-papel-info" class="text-xs font-bold text-emerald-400 mb-1">Aguardando...</div><div id="res-papel-sobra" class="text-[9px] font-bold text-red-400 mb-2"></div><div id="res-papel-visual" class="w-full h-56 bg-[#111] border border-gray-600 relative flex flex-wrap content-start items-start overflow-hidden"></div></div></div></div>
+        
+        <div id="tool-lombada" class="tool-view hidden">
+            <div class="grid grid-cols-2 gap-6">
+                <div class="glass-panel p-6 rounded-3xl space-y-4">
+                    <h3 class="font-black text-lg text-[#ffb347] uppercase">Lombada Livre (Personalizada)</h3>
+                    <div><label class="text-[10px] font-bold text-gray-400">NOME DO PROJETO / LIVRO</label><input type="text" id="lomb-proj" placeholder="Ex: Catálogo 2026"></div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-3">
+                            <label class="text-[10px] font-bold text-emerald-400">TIPO DE PAPEL (Livre ou Selecione)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="lomb-papel" placeholder="Digite o papel" class="flex-[2]">
+                                <select onchange="App.setLombadaPreset(this.value)" class="flex-1 text-[10px] p-1 rounded bg-white/10">
+                                    <option value="">Presets...</option>
+                                    <option value="Offset|90|0.12">Offset 90g</option>
+                                    <option value="Pólen Soft|80|0.13">Pólen Soft 80g</option>
+                                    <option value="Pólen Bold|90|0.16">Pólen Bold 90g</option>
+                                    <option value="Couché Brilho|115|0.10">Couché 115g</option>
+                                    <option value="Alta Alvura|90|0.13">Alta Alvura 90g</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div><label class="text-[10px] font-bold text-emerald-400">GRAMATURA (g)</label><input type="number" id="lomb-gram" placeholder="Ex: 90"></div>
+                        <div><label class="text-[10px] font-bold text-blue-400">FATOR (mm/folha)</label><input type="number" step="0.001" id="lomb-fat" placeholder="0.120" title="Se você souber o caliper/micragem exata da gráfica, digite aqui."></div>
+                        <div><label class="text-[10px] font-bold text-emerald-400">TOTAL PÁGINAS</label><input type="number" id="lomb-pag" placeholder="Ex: 200"></div>
+                    </div>
+                    <button onclick="App.calcLombada()" class="w-full py-3 bg-[#ffb347] font-black rounded-xl text-black mt-2">CALCULAR E SALVAR NO HISTÓRICO</button>
+                    
+                    <div class="bg-black/50 p-4 rounded-xl text-center mt-4">
+                        <span class="text-[10px] text-gray-500 font-bold uppercase block">Espessura Calculada</span>
+                        <span id="res-lombada-final" class="text-4xl font-black text-white">0.0<span class="text-sm text-gray-500">mm</span></span>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 rounded-3xl flex flex-col">
+                    <h3 class="font-black text-lg text-white uppercase mb-4">Histórico de Cálculos (Salvos)</h3>
+                    <div class="overflow-y-auto flex-1 custom-scrollbar">
+                        <table class="w-full text-left text-[10px] uppercase font-bold">
+                            <thead class="bg-white/5 text-gray-400 sticky top-0"><tr><th class="p-2">Projeto</th><th>Papel</th><th>Páginas</th><th>Lombada</th></tr></thead>
+                            <tbody id="lombada-historico-body" class="text-white"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="tool-capa" class="tool-view hidden">
+            <div class="grid grid-cols-5 gap-6">
+                <div class="col-span-2 glass-panel p-4 rounded-3xl space-y-2 h-fit overflow-y-auto max-h-[80vh] custom-scrollbar">
+                    <h3 class="font-black text-lg text-[#ffb347] uppercase">Montagem Nexus (Canva)</h3>
+                    <p class="text-[9px] text-gray-400">Gere a prancheta de impressão aceitando imagens e adicione textos sobrepostos.</p>
+                    <div class="bg-black/30 p-2 rounded border border-white/10 mt-2">
+                        <div class="grid grid-cols-12 gap-1 text-[8px] font-bold text-gray-400 mb-1 text-center items-center"><div class="col-span-3 text-left">PARTE</div><div class="col-span-3">LARG.(mm)</div><div class="col-span-3 text-blue-400">IMG FRENTE</div><div class="col-span-3 text-red-400">IMG VERSO</div></div>
+                        <div class="grid grid-cols-12 gap-1 items-center mb-1 bg-white/5 p-1 rounded"><span class="col-span-3 text-[9px] text-blue-300 font-bold truncate">O. ESQ</span><input type="number" id="gab-o1" value="0" class="col-span-3 text-[10px] p-1 text-center h-6"><input type="file" onchange="App.loadGabImg('frente', 'o1', this)" class="col-span-3"><input type="file" onchange="App.loadGabImg('verso', 'o1', this)" class="col-span-3"></div>
+                        <div class="grid grid-cols-12 gap-1 items-center mb-1 bg-white/5 p-1 rounded"><span class="col-span-3 text-[9px] text-gray-300 font-bold truncate">C. CAPA</span><input type="number" id="gab-cc" value="140" class="col-span-3 text-[10px] p-1 text-center h-6"><input type="file" onchange="App.loadGabImg('frente', 'cc', this)" class="col-span-3"><input type="file" onchange="App.loadGabImg('verso', 'cc', this)" class="col-span-3"></div>
+                        <div class="grid grid-cols-12 gap-1 items-center mb-1 bg-white/5 p-1 rounded"><span class="col-span-3 text-[9px] text-[#ffb347] font-bold truncate">LOMBADA</span><input type="number" id="gab-l" value="10" class="col-span-3 text-[10px] p-1 text-center h-6 border-[#ffb347]"><input type="file" onchange="App.loadGabImg('frente', 'l', this)" class="col-span-3"><input type="file" onchange="App.loadGabImg('verso', 'l', this)" class="col-span-3"></div>
+                        <div class="grid grid-cols-12 gap-1 items-center mb-1 bg-white/5 p-1 rounded"><span class="col-span-3 text-[9px] text-gray-300 font-bold truncate">CAPA FR.</span><input type="number" id="gab-cf" value="140" class="col-span-3 text-[10px] p-1 text-center h-6"><input type="file" onchange="App.loadGabImg('frente', 'cf', this)" class="col-span-3"><input type="file" onchange="App.loadGabImg('verso', 'cf', this)" class="col-span-3"></div>
+                        <div class="grid grid-cols-12 gap-1 items-center mb-1 bg-white/5 p-1 rounded"><span class="col-span-3 text-[9px] text-blue-300 font-bold truncate">O. DIR</span><input type="number" id="gab-o2" value="0" class="col-span-3 text-[10px] p-1 text-center h-6"><input type="file" onchange="App.loadGabImg('frente', 'o2', this)" class="col-span-3"><input type="file" onchange="App.loadGabImg('verso', 'o2', this)" class="col-span-3"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-2"><div><label class="text-[9px] font-bold text-gray-400">ALTURA (mm)</label><input type="number" id="gab-h" value="210" class="h-8"></div><div><label class="text-[9px] font-bold text-red-400">SANGRIA (mm)</label><input type="number" id="gab-sangria" value="15" class="h-8 border-red-500"></div></div>
+                    
+                    <div class="bg-blue-900/20 p-2 rounded border border-blue-500/30 mt-2">
+                        <label class="text-[9px] font-bold text-blue-400">SOBREPOSIÇÃO DE TEXTOS (TITULOS)</label>
+                        <div class="flex gap-1 mt-1">
+                            <input type="text" id="gab-txt-front" placeholder="Título Capa" class="text-[10px] p-1 h-6 w-full">
+                            <input type="text" id="gab-txt-spine" placeholder="Lombada" class="text-[10px] p-1 h-6 w-full">
+                            <input type="color" id="gab-txt-color" value="#ffffff" class="w-8 h-6 p-0 border-0" title="Cor">
+                        </div>
+                    </div>
+
+                    <button onclick="App.calcGabarito()" class="w-full py-3 bg-blue-600 font-black rounded-xl text-white mt-2 shadow-lg shadow-blue-500/20">MONTAR PRANCHETA</button>
+                    <button onclick="App.limparGabarito()" class="w-full py-2 bg-red-900/30 text-red-500 font-bold rounded-xl mt-1 text-[10px]">LIMPAR TUDO</button>
+                </div>
+                <div class="col-span-3 glass-panel p-6 rounded-3xl relative flex flex-col" id="print-area-gab">
+                    <div class="flex justify-between items-center mb-2"><h3 class="font-black text-lg text-[#ffb347] uppercase">Visualizador Canvas</h3><select id="gab-view-mode" onchange="App.calcGabarito()" class="text-xs bg-gray-800 text-white font-bold p-2 border border-gray-600 rounded cursor-pointer w-auto h-8"><option value="frente">VER FRENTE</option><option value="verso">VER VERSO</option></select></div>
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 mb-2 inline-flex items-center justify-between w-full"><div><span class="text-[9px] text-gray-500 font-bold uppercase block">Artboard Completo (L x A)</span><span id="gab-res-artboard" class="text-lg font-black text-emerald-400">--- x ---</span></div><div class="text-right"><span class="text-[9px] text-gray-500 font-bold uppercase block">Sangria Aplicada</span><span id="gab-res-sangria" class="text-lg font-black text-red-400">---</span></div></div>
+                    <div class="w-full flex-1 flex justify-center items-center bg-[#111] rounded-xl border border-gray-700 relative overflow-hidden min-h-[250px]" id="gab-preview-box"></div>
+                    <button onclick="App.printTool('print-area-gab', 'Plano de Montagem')" class="mt-4 w-full py-2 bg-white/10 font-bold rounded-lg text-white text-[10px] no-print">🖨️ IMPRIMIR / SALVAR PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tool-dpi" class="tool-view hidden"><div class="grid grid-cols-2 gap-6"><div class="glass-panel p-6 rounded-3xl space-y-4"><h3 class="font-black text-lg text-[#ffb347] uppercase">Calculadora DPI</h3><div class="grid grid-cols-2 gap-4 mt-2"><div><label class="text-[10px] font-bold text-gray-400">LARGURA (cm)</label><input type="number" id="dpi-w" placeholder="100"></div><div><label class="text-[10px] font-bold text-gray-400">ALTURA (cm)</label><input type="number" id="dpi-h" placeholder="200"></div><div class="col-span-2"><label class="text-[10px] font-bold text-blue-400">RESOLUÇÃO (DPI)</label><select id="dpi-res"><option value="300">300 DPI</option><option value="150">150 DPI</option><option value="72">72 DPI</option></select></div></div><button onclick="App.calcDPI()" class="w-full py-3 bg-[#ffb347] font-black rounded-xl text-black">CALCULAR PIXELS</button><div id="res-dpi-master" class="text-3xl font-black text-emerald-400 text-center mt-4 hidden">0 x 0 <span class="text-xs text-gray-500">px</span></div></div><div class="glass-panel p-6 rounded-3xl space-y-4"><h3 class="font-black text-lg text-blue-400 uppercase">Conversor Local</h3><div><label class="text-[10px] font-bold text-gray-400 block mb-1">IMAGEM</label><input type="file" id="conv-file" accept="image/*" class="w-full text-xs"></div><div><label class="text-[10px] font-bold text-gray-400">SAÍDA</label><select id="conv-format"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WEBP</option></select></div><button onclick="App.converterImagem()" class="w-full py-3 bg-blue-500 font-black rounded-xl text-white">CONVERTER E BAIXAR</button><canvas id="conv-canvas" class="hidden"></canvas></div></div></div>
+        <div id="tool-colors" class="tool-view hidden"><div class="glass-panel p-8 rounded-[2.5rem] max-w-xl mx-auto text-center space-y-4"><h3 class="font-black text-xl text-[#ffb347] uppercase">Conversor HEX > CMYK</h3><div class="flex items-center justify-center gap-4 mt-4"><input type="color" id="color-hex-input" class="w-20 h-20 rounded-full border-4 border-white/10" onchange="App.converterCor()"><input type="text" id="color-hex-text" placeholder="#FFFFFF" class="w-32 text-center text-xl font-mono uppercase" onkeyup="if(this.value.length===7){document.getElementById('color-hex-input').value=this.value; App.converterCor();}"></div><div class="grid grid-cols-2 gap-4 mt-6"><div class="bg-black/50 p-4 rounded-xl"><span class="text-[10px] font-bold text-blue-400 block mb-1">RGB</span><span id="res-color-rgb" class="text-lg font-black text-white">---</span></div><div class="bg-black/50 p-4 rounded-xl border border-blue-500/30"><span class="text-[10px] font-bold text-emerald-400 block mb-1">CMYK</span><span id="res-color-cmyk" class="text-lg font-black text-white">---</span></div></div></div></div>
+        <div id="tool-aurea" class="tool-view hidden"><div class="glass-panel p-8 rounded-[2.5rem] max-w-xl mx-auto space-y-4"><h3 class="font-black text-xl text-[#ffb347] uppercase text-center">Proporção Áurea</h3><div><label class="text-[10px] font-bold text-gray-400">MEDIDA BASE</label><input type="number" id="aurea-base" placeholder="Ex: 1000"></div><button onclick="App.calcAurea()" class="w-full py-4 bg-[#ffb347] text-black font-black rounded-xl">CALCULAR</button><div class="grid grid-cols-2 gap-4 mt-4 text-center"><div class="bg-black/50 p-4 rounded-xl"><span class="text-[10px] font-bold text-gray-400 block mb-1">Maior (* 1.618)</span><span id="res-aurea-maior" class="text-2xl font-black text-emerald-400">---</span></div><div class="bg-black/50 p-4 rounded-xl"><span class="text-[10px] font-bold text-gray-400 block mb-1">Menor (/ 1.618)</span><span id="res-aurea-menor" class="text-2xl font-black text-blue-400">---</span></div></div></div></div>
+        
+        <div id="tool-codigos" class="tool-view hidden"><div class="grid grid-cols-2 gap-6"><div class="glass-panel p-6 rounded-3xl space-y-3"><h3 class="font-black text-lg text-[#ffb347] uppercase">Estúdio Gráfico</h3><div><label class="text-[10px] font-bold text-gray-400">DADOS</label><input type="text" id="gen-text" placeholder="Ex: https://... ou 789123"></div><div class="grid grid-cols-2 gap-2"><div><label class="text-[10px] font-bold text-gray-400">COR LINHAS</label><input type="color" id="code-color-dark" value="#000000" class="w-full"></div><div><label class="text-[10px] font-bold text-gray-400">COR FUNDO</label><input type="color" id="code-color-light" value="#ffffff" class="w-full"></div></div><div><label class="text-[10px] font-bold text-emerald-400 block mb-1">LOGO QR</label><input type="file" id="qr-logo" accept="image/*" class="w-full text-xs"></div><div><label class="text-[10px] font-bold text-purple-400">PADRÃO BARRAS</label><select id="bar-format"><option value="CODE128">CODE128</option><option value="EAN13">EAN-13</option></select></div><div class="flex gap-2"><button onclick="App.gerarQR()" class="flex-1 py-3 bg-emerald-500 font-black rounded-xl text-black">GERAR QR</button><button onclick="App.gerarBarras()" class="flex-1 py-3 bg-purple-500 text-white font-black rounded-xl">GERAR BARRAS</button></div></div><div class="glass-panel p-6 rounded-3xl flex flex-col" id="print-area-cod"><h3 class="font-black text-lg text-[#ffb347] uppercase mb-2 text-center">Resultado</h3><div class="flex flex-col justify-center items-center bg-white p-4 rounded-xl flex-1 relative border border-gray-400" id="codigo-export-area"><canvas id="qrcode-canvas" class="hidden"></canvas><svg id="barcode-canvas" class="hidden w-full max-h-24"></svg><p id="cod-placeholder" class="text-gray-400 text-[10px] font-bold uppercase">Nenhum código gerado.</p></div><div id="code-actions" class="hidden flex gap-2 mt-2 no-print"><button onclick="App.downloadCodigo('png')" class="flex-1 py-2 bg-blue-500 font-bold rounded-lg text-white text-[9px]">📥 PNG</button><button onclick="App.downloadCodigo('svg')" id="btn-svg" class="flex-1 py-2 bg-orange-500 font-bold rounded-lg text-white text-[9px] hidden">📥 SVG</button></div></div></div></div>
+        <div id="tool-pass" class="tool-view hidden"><div class="glass-panel p-8 rounded-[2.5rem] space-y-4 max-w-xl mx-auto"><h3 class="font-black text-xl text-[#ffb347] uppercase">Gerador Senhas</h3><div class="flex items-center gap-4 mt-4"><label class="text-[10px] font-bold text-gray-400">TAMANHO</label><input type="range" id="pass-len" min="8" max="32" value="16" class="flex-1" oninput="document.getElementById('pass-len-val').innerText = this.value"><span id="pass-len-val" class="text-white font-bold text-xl">16</span></div><button onclick="App.gerarSenha()" class="w-full py-4 bg-red-500 text-white font-black rounded-xl">GERAR SENHA</button><input type="text" id="pass-res" readonly class="text-emerald-400 font-mono text-xl bg-black/50 text-center mt-2 p-4 border border-white/10 rounded-xl w-full" onclick="this.select()"></div></div>
+        <div id="tool-links" class="tool-view hidden"><div class="glass-panel p-8 rounded-[2.5rem] space-y-4 max-w-xl mx-auto"><h3 class="font-black text-xl text-[#25D366] uppercase">WhatsApp Rápido</h3><div><label class="text-[10px] font-bold text-gray-400">NÚMERO</label><input type="text" id="wa-link-num"></div><div><label class="text-[10px] font-bold text-gray-400">MENSAGEM INICIAL</label><input type="text" id="wa-link-msg"></div><div class="flex gap-2"><button onclick="App.gerarWALink(true)" class="flex-1 py-3 bg-blue-500 text-white font-black rounded-xl">ABRIR CONVERSA</button><button onclick="App.gerarWALink(false)" class="flex-1 py-3 bg-[#25D366] text-white font-black rounded-xl">COPIAR LINK</button></div><input type="text" id="wa-link-res" readonly class="text-emerald-400 bg-black/50 text-center mt-2 p-3 border border-white/10 rounded-xl w-full text-xs" onclick="this.select()"></div></div>
+        
+        <div id="tool-net" class="tool-view hidden">
+            <div class="grid grid-cols-2 gap-6">
+                <div class="glass-panel p-8 rounded-[2.5rem] space-y-4"><h3 class="font-black text-xl text-blue-400 uppercase">Radar de Conexão Pro</h3><button onclick="App.testarInternet()" class="w-full py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-500">INICIAR VARREDURA</button><div id="res-net" class="mt-4 p-4 bg-black/50 rounded-xl text-center text-sm font-bold text-gray-400 border border-white/5 min-h-[120px] flex items-center justify-center">Aguardando comando...</div></div>
+                <div class="glass-panel p-8 rounded-[2.5rem] space-y-4"><h3 class="font-black text-xl text-[#ffb347] uppercase">DNS Lookup</h3><div class="flex gap-2"><input type="text" id="dns-host" placeholder="Ex: google.com" class="flex-1"><button onclick="App.testarDNS()" class="bg-[#ffb347] text-black font-bold px-4 rounded-xl text-xs">VARRER</button></div><div id="res-dns" class="bg-black/50 p-4 rounded-xl text-[10px] font-mono text-emerald-400 h-24 overflow-y-auto border border-white/5">Resultado aqui.</div></div>
+            </div>
+        </div>
+        <div id="tool-cidr" class="tool-view hidden"><div class="glass-panel p-8 rounded-[2.5rem] max-w-2xl mx-auto space-y-4"><h3 class="font-black text-xl text-blue-400 uppercase text-center">Sub-rede IPv4 (CIDR)</h3><div class="flex gap-2"><input type="text" id="cidr-ip" placeholder="IP (Ex: 192.168.0.1)" class="flex-[3]"><select id="cidr-mask" class="flex-1 text-center"><option value="24">/24</option><option value="25">/25</option><option value="26">/26</option><option value="27">/27</option><option value="28">/28</option><option value="29">/29</option><option value="30">/30</option></select></div><button onclick="App.calcCIDR()" class="w-full py-4 bg-blue-600 text-white font-black rounded-xl">CALCULAR SUB-REDE</button><div class="grid grid-cols-2 gap-2 mt-4 text-left"><div class="bg-black/50 p-3 rounded-xl border border-white/5"><span class="text-[9px] font-bold text-gray-500 block">IP da Rede</span><span id="res-cidr-net" class="text-sm font-black text-emerald-400">---</span></div><div class="bg-black/50 p-3 rounded-xl border border-white/5"><span class="text-[9px] font-bold text-gray-500 block">IP de Broadcast</span><span id="res-cidr-broad" class="text-sm font-black text-red-400">---</span></div><div class="bg-black/50 p-3 rounded-xl border border-white/5"><span class="text-[9px] font-bold text-gray-500 block">Máscara (Subnet)</span><span id="res-cidr-mask" class="text-sm font-black text-white">---</span></div><div class="bg-black/50 p-3 rounded-xl border border-white/5"><span class="text-[9px] font-bold text-gray-500 block">Hosts Úteis</span><span id="res-cidr-hosts" class="text-sm font-black text-blue-400">---</span></div><div class="col-span-2 bg-black/50 p-3 rounded-xl border border-white/5"><span class="text-[9px] font-bold text-gray-500 block">Range Usável</span><span id="res-cidr-range" class="text-sm font-black text-yellow-400">---</span></div></div></div></div>
+        <div id="tool-bat" class="tool-view hidden"><div class="glass-panel p-8 rounded-[2.5rem] max-w-2xl mx-auto space-y-4"><h3 class="font-black text-xl text-emerald-400 uppercase text-center">Scripts de Manutenção (.BAT)</h3><div class="space-y-3 bg-black/30 p-6 rounded-2xl border border-white/5"><label class="flex items-center gap-3 text-xs text-white cursor-pointer font-bold"><input type="checkbox" id="bat-print" class="chk-custom"> 🖨️ Reiniciar Spooler de Impressão</label><label class="flex items-center gap-3 text-xs text-white cursor-pointer font-bold"><input type="checkbox" id="bat-net" class="chk-custom"> 🌐 Resetar Adaptador de Rede (Limpar DNS)</label><label class="flex items-center gap-3 text-xs text-white cursor-pointer font-bold"><input type="checkbox" id="bat-temp" class="chk-custom"> 🗑️ Limpar Arquivos Temporários</label></div><button onclick="App.gerarScriptBat()" class="w-full py-4 bg-emerald-600 text-white font-black rounded-xl">BAIXAR SCRIPT</button></div></div>
+    </section>
+
+    <section id="sec-admin" class="module hidden">
+        <h2 class="text-4xl font-black italic mb-6 uppercase tracking-tighter text-white">Painel <span class="text-[#ffb347]">Master</span></h2>
+        <div class="flex gap-4 mb-6 border-b border-white/10 pb-4">
+            <button onclick="App.navAdmin('admin-empresa', this)" class="tab-btn active px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase">🏢 Empresa & PIX</button>
+            <button onclick="App.navAdmin('admin-user', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase">👤 Usuários</button>
+            <button onclick="App.navAdmin('admin-config', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase">⚙️ Configurações</button>
+            <button onclick="App.navAdmin('admin-export', this)" class="tab-btn px-4 py-2 bg-white/10 text-white font-bold rounded-lg text-[10px] uppercase text-emerald-400">🗃️ Relatórios</button>
+        </div>
+
+        <div id="admin-empresa" class="admin-view grid grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-[#ffb347] uppercase text-xs border-b border-white/10 pb-2">Dados do Recibo</h3>
+                <div><label class="text-[10px] text-gray-500">Nome Fantasia</label><input type="text" id="cfg-nome"></div>
+                <div class="grid grid-cols-2 gap-2"><div><label class="text-[10px] text-gray-500">CNPJ</label><input type="text" id="cfg-cnpj"></div><div><label class="text-[10px] text-gray-500">Telefone</label><input type="text" id="cfg-tel"></div></div>
+                <div><label class="text-[10px] text-gray-500">Endereço</label><input type="text" id="cfg-end"></div>
+                <div><label class="text-[10px] text-emerald-400 font-bold uppercase">CHAVE PIX (Gera QR Code)</label><input type="text" id="cfg-pix"></div>
+                <button onclick="App.saveAdmin()" class="btn-mestre w-full py-3 text-xs mt-2">Salvar Empresa</button>
+            </div>
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-[#ffb347] uppercase text-xs border-b border-white/10 pb-2">Termos e Garantia</h3>
+                <textarea id="cfg-termos" rows="8" class="text-xs"></textarea>
+                <button onclick="App.saveAdmin()" class="btn-mestre w-full py-3 text-xs mt-2">Salvar Termos</button>
+            </div>
+        </div>
+
+        <div id="admin-user" class="admin-view hidden grid grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-[#ffb347] uppercase text-xs border-b border-white/10 pb-2">Acessos</h3>
+                <div id="user-list" class="space-y-2 mb-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar"></div>
+            </div>
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-[#ffb347] uppercase text-xs border-b border-white/10 pb-2">Novo Acesso</h3>
+                <div><label class="text-[10px] text-gray-500">Login</label><input type="text" id="new-user-login"></div>
+                <div><label class="text-[10px] text-gray-500">Senha Inicial</label><input type="password" id="new-user-pass"></div>
+                <div><label class="text-[10px] text-gray-500">Permissão</label><select id="new-user-role"><option value="operador">Operador</option><option value="visualizador">Visualizador</option><option value="admin">Administrador</option></select></div>
+                <button onclick="App.addUser()" class="w-full py-3 bg-emerald-600/20 text-emerald-500 font-bold rounded-xl text-xs">CRIAR ACESSO</button>
+            </div>
+        </div>
+
+        <div id="admin-config" class="admin-view hidden grid grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-[#ffb347] uppercase text-xs border-b border-white/10 pb-2">Numeração e Regras O.S.</h3>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div><label class="text-[10px] text-gray-500 font-bold text-emerald-400">NUMERAÇÃO DA O.S.</label><select id="cfg-os-auto"><option value="true">AUTOMÁTICA (Seq)</option><option value="false">MANUAL</option></select></div>
+                    <div><label class="text-[10px] text-gray-500">Próximo Número (Seq)</label><input type="number" id="cfg-os-seq"></div>
+                </div>
+                <div><label class="text-[10px] text-gray-500 font-bold mt-2 block">Meta Mensal (R$)</label><input type="number" id="cfg-meta"></div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div><label class="text-[10px] text-gray-500">Exigir Senha</label><select id="cfg-login-toggle"><option value="true">LIGADO</option><option value="false">DESLIGADO</option></select></div>
+                    <div><label class="text-[10px] text-gray-500">Avisos Kanban</label><select id="cfg-avisos"><option value="true">LIGADO</option><option value="false">DESLIGADO</option></select></div>
+                </div>
+                <button onclick="App.saveAdmin()" class="btn-mestre w-full py-3 text-xs mt-2">Salvar Config</button>
+            </div>
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-[#ffb347] uppercase text-xs border-b border-white/10 pb-2">Textos Rápidos (Snippets)</h3>
+                <div class="flex gap-2"><input type="text" id="new-snippet-text" placeholder="Ex: Limpeza ok" class="text-xs w-full"><button onclick="App.addSnippet()" class="bg-[#ffb347] text-black font-bold px-3 rounded-lg text-xs">ADD</button></div>
+                <div id="admin-snippet-list" class="space-y-1 max-h-48 overflow-y-auto pr-2 mt-2 custom-scrollbar"></div>
+            </div>
+        </div>
+
+        <div id="admin-export" class="admin-view hidden grid grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-bold text-emerald-400 uppercase text-sm border-b border-white/10 pb-2">Relatórios Customizados</h3>
+                <div><label class="text-[10px] text-gray-400 block mb-1">MÓDULO DO RELATÓRIO:</label>
+                    <select id="report-mod" class="w-full text-xs p-2 rounded"><option value="os_all">Ordens de Serviço</option><option value="os_orc">Orçamentos</option><option value="estoque">Estoque/Almoxarifado</option><option value="fin">Despesas (Saídas)</option><option value="cont">Contratos (Recorrência)</option><option value="rh">Ponto da Equipe</option><option value="cli">Cadastro de Clientes</option></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2"><div><label class="text-[10px] text-gray-400">DATA INICIAL</label><input type="date" id="report-start" class="text-xs p-1"></div><div><label class="text-[10px] text-gray-400">DATA FINAL</label><input type="date" id="report-end" class="text-xs p-1"></div></div>
+                <div class="space-y-2 mt-4 border-t border-white/5 pt-4">
+                    <button onclick="App.exportReport('csv')" class="w-full py-3 bg-emerald-600/20 text-emerald-400 font-bold rounded-xl text-[10px] uppercase hover:bg-emerald-500 hover:text-black">📄 Planilha CSV (Excel)</button>
+                    <button onclick="App.printReport()" class="w-full py-3 bg-blue-600/20 text-blue-400 font-bold rounded-xl text-[10px] uppercase hover:bg-blue-500 hover:text-white">🖨️ Visualizar / Imprimir PDF</button>
+                </div>
+            </div>
+            <div class="glass-panel p-6 rounded-3xl space-y-3 text-center border border-red-500/30 bg-red-900/10">
+                <h3 class="font-bold text-red-500 uppercase text-sm border-b border-red-500/20 pb-2">Backup Base de Dados (Cofre)</h3>
+                <button onclick="App.exportReport('json')" class="w-3/4 mx-auto py-3 bg-red-600 text-white font-black rounded-xl text-[10px] uppercase shadow-lg shadow-red-500/30 block mb-2 mt-4">📥 BAIXAR BANCO COMPLETO (.JSON)</button>
+                <hr class="border-red-500/20 w-full my-4">
+                <input type="file" id="import-file" class="hidden" accept=".json" onchange="App.handleImport(this)">
+                <button onclick="document.getElementById('import-file').click()" class="w-3/4 mx-auto py-3 bg-transparent border-2 border-dashed border-red-500 text-red-400 font-bold rounded-xl text-[10px] uppercase hover:bg-red-500/20 block">📤 RESTAURAR DADOS (.JSON)</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="modal-os" class="hidden fixed inset-0 z-[3000] flex items-center justify-center bg-black/95 p-4">
+    <div class="glass-panel p-8 rounded-[3rem] w-full max-w-7xl max-h-[95vh] overflow-y-auto shadow-2xl border border-[#ffb347]/30 custom-scrollbar">
+        <div class="flex justify-between items-start mb-4 border-b border-white/10 pb-4">
+            <div>
+                <h2 class="text-3xl font-black text-[#ffb347] uppercase italic mb-1 flex items-center gap-2">
+                    <select id="f-tipo" class="bg-transparent border-none text-[#ffb347] p-0 text-3xl italic font-black uppercase cursor-pointer" style="box-shadow:none; width:auto; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
+                        <option value="OS">ORDEM DE SERVIÇO</option><option value="Orcamento">ORÇAMENTO</option>
+                    </select>
+                    <span id="os-id-display" class="text-white text-2xl"></span>
+                </h2>
+                <div class="text-[10px] font-bold text-gray-500 flex gap-4 items-center">
+                    <span>PAGAMENTO:</span>
+                    <select id="f-pagamento" class="bg-transparent border-none text-white p-0 h-auto cursor-pointer" style="box-shadow:none;">
+                        <option value="Pendente" class="text-red-500">🔴 PENDENTE</option><option value="Parcial" class="text-yellow-500">🟡 SINAL / PARCIAL</option><option value="Pago" class="text-emerald-500">🟢 PAGO</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="App.printEtiquetaTermica()" class="px-4 py-2 bg-gray-600/20 text-gray-300 rounded-xl hover:bg-gray-600 hover:text-white text-[9px] font-bold uppercase border border-gray-500/30">🏷️ ETIQUETA (80mm)</button>
+                <button onclick="App.printProvaVirtual()" class="px-4 py-2 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600 hover:text-white text-[9px] font-bold uppercase border border-red-500/30">🛡️ PROVA VIRTUAL</button>
+                <button onclick="App.printOS()" class="px-4 py-2 bg-white/5 rounded-xl hover:bg-white/10 text-[9px] font-bold uppercase border border-white/10">🖨️ IMPRIMIR RECIBO</button>
+                <button onclick="App.closeOSModal()" class="px-4 py-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white text-[9px] font-bold">✕ FECHAR</button>
+            </div>
+        </div>
+        
+        <input type="hidden" id="f-id">
+        <input type="hidden" id="f-interacoes">
+        
+        <div class="grid grid-cols-6 gap-3 text-white">
+            <div class="col-span-2">
+                <label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Cliente / Empresa (Busca Auto)</label>
+                <div class="flex gap-1">
+                    <input type="text" id="f-cliente" class="text-xs" list="cli-datalist" onchange="App.fillCliData()">
+                    <datalist id="cli-datalist"></datalist>
+                </div>
+            </div>
+            <div class="col-span-2"><label class="text-[9px] font-bold text-[#25D366] uppercase ml-1">WhatsApp</label><input type="text" id="f-telefone" class="text-xs"></div>
+            <div class="col-span-2"><label class="text-[9px] font-bold text-[#3b82f6] uppercase ml-1">E-mail</label><input type="email" id="f-email" class="text-xs"></div>
+            
+            <div class="col-span-2"><label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Setor</label><select id="f-setor-select" class="text-xs" onchange="App.uiAjuste()"></select></div>
+            <div class="col-span-2"><label id="lbl-modelo" class="text-[9px] font-bold text-gray-500 uppercase ml-1">Modelo/Projeto</label><input type="text" id="f-modelo" class="text-xs"></div>
+            <div class="col-span-2"><label id="lbl-serie" class="text-[9px] font-bold text-gray-500 uppercase ml-1">Série/Tag</label><input type="text" id="f-serie" class="text-xs"></div>
+
+            <div class="col-span-6 bg-black/40 p-3 rounded-2xl border border-blue-500/20" id="box-checklist">
+                <label class="text-[9px] font-bold text-blue-400 uppercase block mb-2">☑️ Sub-Tarefas do Setor</label>
+                <div id="os-checklist-container" class="grid grid-cols-4 gap-2 text-xs text-gray-300"></div>
+                <input type="hidden" id="f-checklist-hidden" value="[]">
+            </div>
+
+            <div class="col-span-6 grid grid-cols-2 gap-4">
+                <div id="box-pecas-os" class="bg-black/40 p-3 rounded-2xl border border-emerald-500/20">
+                    <label class="text-[9px] font-bold text-emerald-400 uppercase block mb-2">📦 Insumos / Peças Utilizadas</label>
+                    <div class="flex gap-2 mb-2"><select id="os-add-peca" class="flex-[3] text-xs p-2 rounded"></select><input type="number" id="os-add-peca-qtd" value="1" min="1" class="flex-1 text-xs px-2 rounded"><button onclick="App.addPecaOS()" class="bg-emerald-500 text-black font-bold px-4 rounded-xl text-[10px]">ADD O.S.</button></div>
+                    <div id="os-pecas-list" class="space-y-1 text-[9px] font-mono text-gray-400 bg-black/50 p-2 rounded max-h-20 overflow-y-auto custom-scrollbar">Nenhum insumo.</div>
+                    <input type="hidden" id="f-pecas-hidden" value="[]">
+                </div>
+                
+                <div class="bg-black/40 p-3 rounded-2xl border border-purple-500/20">
+                    <label class="text-[9px] font-bold text-purple-400 uppercase block mb-2">📸 Estúdio de Fotos (Registro/Arte)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="text-center"><input type="file" id="os-foto-1" accept="image/*" class="w-full text-[8px]" onchange="App.loadOSImage('f-img-1', this)"><div id="f-img-1-box" class="h-16 w-full bg-black mt-1 rounded flex items-center justify-center overflow-hidden border border-white/5"><span class="text-gray-600 text-[8px]">Sem Foto 1</span></div><input type="hidden" id="f-img-1-b64"></div>
+                        <div class="text-center"><input type="file" id="os-foto-2" accept="image/*" class="w-full text-[8px]" onchange="App.loadOSImage('f-img-2', this)"><div id="f-img-2-box" class="h-16 w-full bg-black mt-1 rounded flex items-center justify-center overflow-hidden border border-white/5"><span class="text-gray-600 text-[8px]">Sem Foto 2</span></div><input type="hidden" id="f-img-2-b64"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-2"><label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Técnico</label><input type="text" id="f-tecnico" class="text-xs"></div>
+            <div class="col-span-2"><label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Status Kanban</label><select id="f-status-select" class="text-xs"></select></div>
+            <div class="col-span-2"><label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Prioridade</label><select id="f-prioridade" class="text-xs"><option value="Baixa">🟢 Baixa</option><option value="Média">🟡 Média</option><option value="Alta">🔴 Alta</option></select></div>
+
+            <div><label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Entrada</label><input type="date" id="f-entrada" class="text-xs px-1"></div>
+            <div><label class="text-[9px] font-bold text-gray-500 uppercase ml-1">Início</label><input type="date" id="f-inicio" class="text-xs px-1"></div>
+            <div class="col-span-2"><label class="text-[9px] font-bold text-[#ffb347] uppercase ml-1">Prazo (SLA)</label><input type="date" id="f-conclusao" class="text-xs px-1"></div>
+            <div class="col-span-2"><label class="text-[9px] font-bold text-emerald-500 uppercase ml-1">Entrega Real</label><input type="date" id="f-saida" class="text-xs px-1"></div>
+            
+            <div class="col-span-2 relative">
+                <label class="text-[9px] font-bold text-red-400 uppercase ml-1 block mb-1">🔒 LAUDO INTERNO</label>
+                <div id="snippets-internos" class="flex gap-1 overflow-x-auto mb-1 pb-1 custom-scrollbar"></div>
+                <textarea id="f-laudo" rows="4" class="border-red-500/30 bg-red-900/10 text-xs"></textarea>
+            </div>
+            <div class="col-span-2 relative">
+                <label class="text-[9px] font-bold text-blue-400 uppercase ml-1 block mb-1">📢 RESUMO P/ CLIENTE</label>
+                <div id="snippets-externos" class="flex gap-1 overflow-x-auto mb-1 pb-1 custom-scrollbar"></div>
+                <textarea id="f-parecer-externo" rows="4" class="border-blue-500/30 bg-blue-900/10 text-xs"></textarea>
+            </div>
+            
+            <div class="col-span-2 flex flex-col justify-between">
+                <div class="bg-black/40 p-2 rounded-xl border border-[#ffb347]/30 text-center mb-1">
+                    <div class="grid grid-cols-2 gap-2 mb-1 border-b border-white/5 pb-1">
+                        <div><label class="text-[9px] font-bold text-gray-500 uppercase block mb-1">VALOR TOTAL</label><input type="number" id="f-total" step="0.01" class="text-center text-white font-bold text-lg border-none bg-black/50 p-1 w-full" value="0.00" oninput="App.calcSaldoOS()"></div>
+                        <div><label class="text-[9px] font-bold text-emerald-400 uppercase block mb-1">SINAL PAGO</label><input type="number" id="f-entrada-sinal" step="0.01" class="text-center text-emerald-400 font-bold text-lg border-none bg-black/50 p-1 w-full" value="0.00" oninput="App.calcSaldoOS()"></div>
+                    </div>
+                    <label class="text-[10px] font-black text-[#ffb347] uppercase block mb-1">SALDO DEVEDOR</label>
+                    <input type="text" id="f-saldo" readonly class="text-center text-orange-400 font-black text-2xl border-none bg-transparent p-0 w-full" value="R$ 0.00">
+                </div>
+                <div class="flex-1">
+                    <label class="text-[9px] font-bold text-blue-400 uppercase ml-1">Prontuário</label>
+                    <div id="prontuario-lista" class="bg-black/50 p-2 rounded-lg h-[45px] overflow-y-auto text-[8px] text-gray-400 font-mono border border-white/5"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3 border-t border-white/5 pt-4 mt-2 items-center">
+            <div class="flex gap-2 w-1/2">
+                <button onclick="App.openCommsModal()" class="bg-blue-600 text-white font-bold px-4 py-3 rounded-xl text-[10px] uppercase hover:bg-blue-500">📡 COMUNICAR CLIENTE</button>
+            </div>
+            <button onclick="App.closeOSModal()" class="flex-1 py-3 font-bold text-gray-500 uppercase text-[10px] text-right">Descartar</button>
+            <button onclick="App.saveOS()" id="btn-save-os" class="btn-mestre flex-[2] text-sm shadow-lg shadow-orange-500/20 py-3">
+                <span id="btn-save-text">💾 GRAVAR DADOS</span>
+                <span id="save-loader" class="loader hidden"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-comms" class="hidden fixed inset-0 z-[4000] flex items-center justify-center bg-black/90 p-4">
+    <div class="glass-panel p-8 rounded-3xl w-full max-w-md shadow-2xl border border-blue-500/50">
+        <h3 class="text-xl font-black text-white mb-2 uppercase">Central de Envio</h3>
+        <div class="space-y-3 mb-6 bg-black/30 p-4 rounded-2xl border border-white/5">
+            <label class="flex items-center gap-3 text-[11px] text-white cursor-pointer font-bold"><input type="checkbox" id="chk-status" checked class="chk-custom"> ⚙️ Incluir Status Atual</label>
+            <label class="flex items-center gap-3 text-[11px] text-white cursor-pointer font-bold"><input type="checkbox" id="chk-prazo" checked class="chk-custom"> 📅 Incluir Previsão</label>
+            <label class="flex items-center gap-3 text-[11px] text-white cursor-pointer font-bold"><input type="checkbox" id="chk-valor" class="chk-custom"> 💰 Incluir Saldo</label>
+            <label class="flex items-center gap-3 text-[11px] text-blue-400 cursor-pointer font-bold"><input type="checkbox" id="chk-resumo" checked class="chk-custom"> 📢 Incluir 'Resumo p/ Cliente'</label>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="App.executeComms('wa')" class="flex-1 py-3 bg-[#25D366] text-white font-black rounded-xl text-[10px] uppercase">💬 WhatsApp</button>
+            <button onclick="App.executeComms('email')" class="flex-1 py-3 bg-blue-500 text-white font-black rounded-xl text-[10px] uppercase">✉️ E-mail</button>
+        </div>
+        <button onclick="document.getElementById('modal-comms').classList.add('hidden')" class="w-full mt-3 py-2 text-gray-500 text-[9px] font-bold uppercase">Cancelar Envio</button>
+    </div>
+</div>
+
+<script>
+const style = document.createElement('style'); style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`; document.head.appendChild(style);
+
+const db = new Dexie("NexusTitanDB");
+
+db.version(43).stores({
+    os: "++id, cliente, telefone, email, setor, tecnico, status, prioridade, total, entrada, laudo, parecerExterno, modelo, serie, dataEntrada, dataInicio, dataConclusao, dataSaida, pagamento, tipo, pecas, fotoAntes, fotoDepois, checklist",
+    config: "id, nomeEmpresa, cnpjEmpresa, endEmpresa, telEmpresa, metaMensal, loginAtivo, statusLista, setoresLista, ultimoBackup, termosGarantia, avisosVisuais, chavePix, numAuto, seqOS",
+    auditoria: "++id, data, acao, detalhe, modulo",
+    usuarios: "++id, login, senha, nome, cargo, perfil",
+    estoque: "++id, nome, qtd, min, preco",
+    snippets: "++id, texto, tipo",
+    despesas: "++id, data, descricao, valor, categoria, tipoMov", 
+    contratos: "++id, cliente, valor, diaVencimento, status",
+    ponto: "++id, usuario, data, evento, timestamp",
+    clientes: "++id, nome, documento, telefone, email, end",
+    lombadas: "++id, projeto, papel, gramatura, espessura, data", // NOVO
+    backup_emergencia: "id, timestamp, data_json" 
+});
+
+const defaultChecklists = { "Suporte TI": [{task:"Backup", done:false}, {task:"Limpeza", done:false}, {task:"OS/Formatação", done:false}, {task:"Drivers", done:false}], "Design": [{task:"Briefing", done:false}, {task:"Rascunho", done:false}, {task:"Aprovação", done:false}, {task:"Fechamento", done:false}], "Diagramação": [{task:"Revisão Texto", done:false}, {task:"Estilo Master", done:false}, {task:"Paginação", done:false}, {task:"Fechamento", done:false}] };
+
+const App = {
+    charts: {}, currentUser: null, cloudHandle: null, gabImages: { frente: { o1: '', cc: '', l: '', cf: '', o2: '' }, verso: { o1: '', cc: '', l: '', cf: '', o2: '' } },
+
+    toast(msg, type='success') {
+        const c = document.getElementById('toast-container'); const t = document.createElement('div');
+        t.className = `p-4 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform translate-y-0 opacity-100 ${type==='success'?'bg-emerald-500':'bg-red-500'}`;
+        t.innerText = msg; c.appendChild(t); setTimeout(() => { t.classList.add('opacity-0', 'translate-y-5'); setTimeout(() => t.remove(), 300); }, 3000);
+    },
+
+    async init() {
+        try {
+            db.on('blocked', () => alert("FECHE AS OUTRAS ABAS DO SISTEMA."));
+            let conf = await db.config.get(1);
+            if (!conf) {
+                await db.config.add({ id: 1, nomeEmpresa: "Nosso TI Soluções em Tecnologia", cnpjEmpresa: "36.626.405/0001-87", endEmpresa: "", telEmpresa: "11962025262", chavePix: "36626405000187", metaMensal: 10000, loginAtivo: "false", avisosVisuais: "true", numAuto: "true", seqOS: 1, statusLista: ["Aguardando", "Em Processo", "Em Teste", "Concluido", "Entregue"], setoresLista: ["Suporte TI", "Design", "Diagramação"], ultimoBackup: new Date().toLocaleDateString(), termosGarantia: "A garantia cobre apenas defeitos técnicos." });
+                conf = await db.config.get(1);
+            } else {
+                // AUTO-REPAIR PARA QUEM ATUALIZOU DA V27 PARA A V29
+                let updated = false;
+                if(conf.numAuto === undefined) { conf.numAuto = "true"; conf.seqOS = 1; updated = true; }
+                if(conf.chavePix === undefined) { conf.chavePix = ""; updated = true; }
+                if(updated) await db.config.put(conf);
+            }
+            
+            let users = await db.usuarios.toArray(); if (users.length === 0) await db.usuarios.add({ login: "Nossoti", senha: "Gaby2009", nome: "Jorge Augusto", cargo: "CEO", perfil: "admin" });
+
+            if (conf.loginAtivo === "true" || conf.loginAtivo === true) document.getElementById('login-screen').classList.remove('hidden');
+            else { this.currentUser = { nome: "Acesso Direto", perfil: "admin" }; this.applyPermissions(); }
+            
+            this.renderLombadaHist();
+        } catch(e) { document.getElementById('login-screen').classList.add('hidden'); this.currentUser = { nome: "Admin Bypass", perfil: "admin" }; this.applyPermissions(); }
+    },
+
+    async logout() { this.currentUser = null; document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = ''; document.getElementById('login-screen').classList.remove('hidden'); this.toast("Sessão encerrada."); },
+
+    async connectDrive() {
+        try {
+            if(!window.showOpenFilePicker) return alert("Navegador não suporta Nuvem Nativa.");
+            const [handle] = await window.showOpenFilePicker({ types: [{ description: 'Banco Nexus', accept: {'application/json': ['.json']} }] });
+            this.cloudHandle = handle; const file = await handle.getFile(); const contents = await file.text();
+            if(contents && contents.includes("os")) {
+                const data = JSON.parse(contents);
+                if(confirm("Substituir os dados da tela pelo arquivo da nuvem?")) {
+                    await db.os.clear(); await db.config.clear(); await db.usuarios.clear(); await db.estoque.clear(); await db.snippets.clear(); await db.despesas.clear(); await db.contratos.clear(); await db.ponto.clear(); await db.clientes.clear();
+                    if(data.os) await db.os.bulkAdd(data.os); if(data.config) await db.config.bulkAdd(data.config); if(data.usuarios) await db.usuarios.bulkAdd(data.usuarios); if(data.estoque) await db.estoque.bulkAdd(data.estoque); if(data.snippets) await db.snippets.bulkAdd(data.snippets); if(data.despesas) await db.despesas.bulkAdd(data.despesas); if(data.contratos) await db.contratos.bulkAdd(data.contratos); if(data.ponto) await db.ponto.bulkAdd(data.ponto); if(data.clientes) await db.clientes.bulkAdd(data.clientes);
+                    this.safeRefresh(); this.toast("Banco Nuvem Carregado!");
+                }
+            }
+            document.getElementById('cloud-indicator').className = "w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"; document.getElementById('cloud-status-text').className = "text-[10px] text-emerald-400 mb-3 font-bold"; document.getElementById('cloud-status-text').innerText = "NUVEM CONECTADA"; document.getElementById('btn-connect-cloud').classList.add('hidden');
+        } catch(e) {}
+    },
+
+    async pushToCloud() {
+        if(!this.cloudHandle) return;
+        try {
+            const data = { os: await db.os.toArray(), config: await db.config.toArray(), usuarios: await db.usuarios.toArray(), estoque: await db.estoque.toArray(), snippets: await db.snippets.toArray(), despesas: await db.despesas.toArray(), contratos: await db.contratos.toArray(), ponto: await db.ponto.toArray(), clientes: await db.clientes.toArray() };
+            const writable = await this.cloudHandle.createWritable(); await writable.write(JSON.stringify(data)); await writable.close();
+        } catch(e) { document.getElementById('cloud-indicator').className = "w-3 h-3 rounded-full bg-yellow-500"; document.getElementById('cloud-status-text').innerText = "ERRO NUVEM"; document.getElementById('btn-connect-cloud').classList.remove('hidden'); this.cloudHandle = null; }
+    },
+
+    async forgotPass() { const key = prompt("Chave Mestra (RESET2026):"); if (key === "RESET2026") { await db.config.update(1, { loginAtivo: "false" }); this.toast("Login desativado."); document.getElementById('login-screen').classList.add('hidden'); this.currentUser = { nome: "Admin Recuperação", perfil: "admin" }; this.applyPermissions(); } else { this.toast("Chave incorreta.", "error"); } },
+
+    async auth() {
+        const user = document.getElementById('login-user').value.trim(); const pass = document.getElementById('login-pass').value.trim();
+        if(user.toLowerCase() === "nossoti" && pass === "Gaby2009") { document.getElementById('login-screen').classList.add('hidden'); this.currentUser = { nome: "Jorge Augusto", perfil: "admin" }; this.applyPermissions(); return; }
+        try { const users = await db.usuarios.toArray(); const u = users.find(x => x.login.toLowerCase() === user.toLowerCase()); if(u && u.senha === pass) { document.getElementById('login-screen').classList.add('hidden'); this.currentUser = u; this.applyPermissions(); } else { this.toast("Credenciais incorretas.", "error"); } } catch(e) { this.toast("Erro: " + e.message, "error"); }
+    },
+
+    applyPermissions() {
+        document.getElementById('logged-user-name').innerText = this.currentUser.nome || "Admin"; document.getElementById('logged-user-role').innerText = (this.currentUser.perfil || "admin").toUpperCase();
+        if(this.currentUser.perfil === 'operador') { document.getElementById('m-admin').style.display = 'none'; document.getElementById('m-fin').style.display = 'none'; } 
+        else if (this.currentUser.perfil === 'visualizador') { document.getElementById('m-admin').style.display = 'none'; document.getElementById('m-fin').style.display = 'none'; document.getElementById('btn-nova-os').style.display = 'none'; document.getElementById('btn-save-os').style.display = 'none'; }
+        this.nav('dash');
+    },
+
+    nav(id) {
+        document.querySelectorAll('.module').forEach(m => m.classList.add('hidden')); document.getElementById('sec-'+id).classList.remove('hidden');
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active')); document.getElementById('m-'+id).classList.add('active');
+        if(id === 'hist') this.renderHist(); if(id === 'estoque') this.renderEstoque(); if(id === 'fin') this.renderFin(); if(id === 'rh') this.renderRH(); if(id === 'clientes') this.renderClientes(); this.safeRefresh();
+    },
+
+    navTool(tabId, btn) { document.querySelectorAll('.tool-view').forEach(t => t.classList.add('hidden')); document.getElementById(tabId).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); },
+    navAdmin(tabId, btn) { document.querySelectorAll('.admin-view').forEach(t => t.classList.add('hidden')); document.getElementById(tabId).classList.remove('hidden'); document.querySelectorAll('#sec-admin .tab-btn').forEach(b => b.classList.remove('active', 'bg-[#ffb347]/20')); if(btn) btn.classList.add('active', 'bg-[#ffb347]/20'); },
+
+    printTool(areaId, titulo) {
+        const conteudo = document.getElementById(areaId).innerHTML; const win = window.open('', 'PRINT', 'height=600,width=800');
+        win.document.write(`<html><head><title>${titulo}</title><style>body { font-family: sans-serif; padding: 40px; text-align: center; } h3 { color: #333; margin-bottom: 20px; text-transform: uppercase; } button, .no-print { display: none !important; } .bg-gray-900, .bg-gray-800, .bg-\\[\\#0a0a0a\\] { background: #fff !important; border: 1px solid #000; } .text-white, .text-emerald-400, .text-gray-400, .text-red-400 { color: #000 !important; } .border-white\\/20, .border-dashed, .border-gray-600 { border-color: #000 !important; } .bg-\\[\\#111\\] { background: #fff !important; } .text-\\[\\#ffb347\\] { color: #333 !important; border-color: #333 !important; } .border-blue-500 { border-color: #00f !important; } .border-emerald-500 { border-color: #0f0 !important; } .border-orange-500 { border-color: orange !important;} .gab-part { display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; font-weight:bold; color:black; border-right: 1px dashed #000; background-size: 100% 100%; background-position: center; background-repeat: no-repeat; position:relative; } .overlay-txt { position:absolute; font-family:sans-serif; text-shadow: none; z-index:10; pointer-events:none;} * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }</style></head><body><h1>${titulo}</h1><hr><br>${conteudo}<script>setTimeout(()=>{window.print();window.close();},800);<\/script></body></html>`); this.toast("Impressão Solicitada.");
+    },
+
+    calcInteligencia(os) {
+        const hojeStr = new Date().toISOString().split('T')[0]; let atrasadas = 0, criticas = 0, alertas = 0, ativas = 0; let crmOpps = [];
+        if(!Array.isArray(os)) return { atrasadas: 0, criticas: 0, alertas: 0, crmOpps: [] };
+        os.forEach(i => {
+            if(i.tipo === 'Orcamento' || i.status === 'Concluido' || i.status === 'Entregue') {
+                if((i.status === 'Concluido' || i.status === 'Entregue') && i.dataSaida) {
+                    const diffDays = (new Date(hojeStr) - new Date(i.dataSaida)) / (1000 * 60 * 60 * 24);
+                    if(diffDays > 180) crmOpps.push(i);
+                }
+                return;
+            }
+            ativas++; if(!i.dataConclusao) return;
+            const diff = (new Date(i.dataConclusao) - new Date(hojeStr)) / (1000 * 60 * 60 * 24);
+            if(diff < 0) atrasadas++; else if(diff <= 2) criticas++; else if(diff <= 7) alertas++;
+        });
+        const txt = document.getElementById('dash-intelligence');
+        if(ativas === 0) txt.innerHTML = "Nenhuma O.S. ativa."; else if(atrasadas > 0) txt.innerHTML = `ALERTA VERMELHO: <b class="text-red-500">${atrasadas} atrasados</b>.`; else if(criticas > 0) txt.innerHTML = `ATENÇÃO: <b class="text-orange-500">${criticas} vencendo em 48h</b>.`; else if(alertas > 0) txt.innerHTML = `Fluxo normal. <b class="text-yellow-400">${alertas} vencendo em 7 dias.</b>`; else txt.innerHTML = `Todos os ${ativas} trabalhos ativos.`;
+        return { atrasadas, criticas, alertas, crmOpps };
+    },
+
+    async safeRefresh() {
+        try {
+            const os = await db.os.toArray() || []; const despesas = await db.despesas.toArray() || []; let cfg = await db.config.get(1);
+            if(!cfg) cfg = { metaMensal: 10000, statusLista: ["Aguardando", "Em Processo", "Em Teste", "Concluido", "Entregue"], avisosVisuais: true };
+            
+            const faturamentoBruto = os.filter(x => x.tipo !== 'Orcamento').reduce((a, b) => a + Number(b.total || 0), 0);
+            const faturamentoPago = os.filter(x => x.tipo !== 'Orcamento' && x.pagamento === 'Pago').reduce((a, b) => a + Number(b.total || 0), 0);
+            const sinalPago = os.filter(x => x.tipo !== 'Orcamento' && x.pagamento === 'Parcial').reduce((a, b) => a + Number(b.entrada || 0), 0);
+            const rAvulsa = despesas.filter(x => x.tipoMov === 'Entrada').reduce((a, b) => a + Number(b.valor || 0), 0);
+            const despTotal = despesas.filter(x => x.tipoMov !== 'Entrada').reduce((a, b) => a + Number(b.valor || 0), 0);
+            const lucro = (faturamentoPago + sinalPago + rAvulsa) - despTotal;
+
+            const intel = this.calcInteligencia(os);
+
+            document.getElementById('kpi-grid').innerHTML = `
+                <div class="glass-panel p-4 rounded-2xl border-b-2 border-[#ffb347]"><p class="text-[9px] text-gray-500 uppercase font-bold">Faturamento Bruto</p><p class="text-xl font-black">R$ ${faturamentoBruto.toLocaleString()}</p></div>
+                <div class="glass-panel p-4 rounded-2xl border-b-2 border-emerald-500"><p class="text-[9px] text-gray-500 uppercase font-bold">Lucro Líquido Real</p><p class="text-xl font-black ${lucro<0?'text-red-500':'text-emerald-400'}">R$ ${lucro.toLocaleString()}</p></div>
+                <div class="glass-panel p-4 rounded-2xl border-b-2 border-blue-500"><p class="text-[9px] text-gray-500 uppercase font-bold">Meta Produção</p><p class="text-xl font-black">${((faturamentoBruto/cfg.metaMensal)*100).toFixed(1)}%</p></div>
+                <div class="glass-panel p-4 rounded-2xl border-b-2 border-red-500"><p class="text-[9px] text-gray-500 uppercase font-bold">Atrasos Críticos</p><p class="text-xl font-black text-red-500">${intel.atrasadas}</p></div>
+                <div class="glass-panel p-4 rounded-2xl border-b-2 border-purple-500"><p class="text-[9px] text-gray-500 uppercase font-bold">Saídas de Caixa</p><p class="text-xl font-black">R$ ${despTotal.toLocaleString()}</p></div>
+            `;
+
+            const crmBox = document.getElementById('crm-oportunidades');
+            if(intel.crmOpps.length > 0) { crmBox.innerHTML = intel.crmOpps.slice(0, 10).map(o => `<div class="border-l-2 border-purple-500 pl-2 mb-1 cursor-pointer hover:bg-white/5 p-1 rounded" onclick="App.openOSModal(${o.id})"><b class="text-white">${o.cliente.substring(0,15)}</b>: Último svç há +6 meses.</div>`).join(""); } else { crmBox.innerHTML = "Nenhuma oportunidade."; }
+
+            this.renderKanban(os, cfg); this.renderCronos(os); this.renderCharts(os, cfg, faturamentoBruto, despTotal);
+            if(this.currentUser && this.currentUser.perfil === 'admin') { const users = await db.usuarios.toArray(); const snips = await db.snippets.toArray(); this.renderAdminLists(cfg, users, snips); }
+        } catch(e) { console.error(e); }
+    },
+
+    renderCronos(os) {
+        const cList = document.getElementById('cronos-list'); const active = os.filter(i => i.tipo !== 'Orcamento' && i.status !== 'Concluido' && i.status !== 'Entregue');
+        active.sort((a,b) => new Date(a.dataConclusao || '2099-01-01') - new Date(b.dataConclusao || '2099-01-01'));
+        if(active.length === 0) { cList.innerHTML = "<div class='text-gray-500 text-xs'>Limpo.</div>"; return; }
+        cList.innerHTML = active.map(i => {
+            let checklist = []; try { checklist = JSON.parse(i.checklist || "[]"); } catch(e){}
+            const doneTasks = checklist.filter(t => t.done).length; const totalTasks = checklist.length > 0 ? checklist.length : 1; let prog = checklist.length > 0 ? (doneTasks / totalTasks) * 100 : 0;
+            const hoje = new Date().toISOString().split('T')[0]; let msgData = "Sem prazo"; let corData = "text-gray-500";
+            if(i.dataConclusao) { const diff = (new Date(i.dataConclusao) - new Date(hoje)) / (1000 * 60 * 60 * 24); if(diff < 0) { msgData = "VENCIDO!"; corData = "text-red-500"; } else if (diff === 0) { msgData = "VENCE HOJE"; corData = "text-orange-500"; } else { msgData = `Vence em ${diff} dias`; corData = "text-blue-400"; } }
+            return `<div class="bg-black/30 p-4 rounded-xl border border-white/5 cursor-pointer hover:bg-white/5" onclick="App.openOSModal(${i.id})"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-white">#${i.id} - ${i.cliente} (${i.setor})</span><span class="text-[10px] font-black ${corData}">${msgData}</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${prog}%"></div></div></div>`;
+        }).join("");
+    },
+
+    dragStart(e, id) { e.dataTransfer.setData('os_id', id); e.target.classList.add('dragging'); },
+    allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); },
+    dragLeave(e) { e.currentTarget.classList.remove('drag-over'); },
+    async dropOS(e, newStatus) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over'); document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+        const id = e.dataTransfer.getData('os_id'); if(!id) return; let os = await db.os.get(Number(id));
+        if(os && os.status !== newStatus) {
+            if(newStatus === "Orcamentos") { await db.os.update(Number(id), { tipo: 'Orcamento', status: 'Aguardando' }); } else { await db.os.update(Number(id), { tipo: 'OS', status: newStatus }); }
+            this.safeRefresh(); this.pushToCloud(); this.toast(`Movido para ${newStatus}`);
+        }
+    },
+
+    renderKanban(os, cfg) {
+        const container = document.getElementById('kanban-container'); container.innerHTML = ""; const hojeStr = new Date().toISOString().split('T')[0];
+        let colsMap = { "Orcamentos": "" }; cfg.statusLista.forEach(s => { if(s !== "Entregue") colsMap[s] = ""; });
+
+        os.forEach(i => {
+            if(i.status === "Entregue" && i.tipo !== "Orcamento") return;
+            let glowClass = 'border-gray-800';
+            let avisosOn = (cfg.avisosVisuais === true || cfg.avisosVisuais === "true");
+            if(avisosOn && i.status !== 'Concluido' && i.tipo !== 'Orcamento' && i.dataConclusao) {
+                const diff = (new Date(i.dataConclusao) - new Date(hojeStr)) / (1000 * 60 * 60 * 24);
+                if(diff < 0) glowClass = 'border-red-500 led-red'; else if(diff <= 2) glowClass = 'border-orange-500 led-orange'; else if(diff <= 7) glowClass = 'border-yellow-500 led-yellow';
+            }
+            let pgBadge = ""; if(i.pagamento === 'Pendente') pgBadge = `<span class="badge-pg-pendente">Pendente</span>`; else if(i.pagamento === 'Parcial') pgBadge = `<span class="badge-pg-parcial">Sinal</span>`; else if(i.pagamento === 'Pago') pgBadge = `<span class="badge-pg-pago">Pago</span>`;
+
+            let checklist = []; try { checklist = JSON.parse(i.checklist || "[]"); } catch(e){} let prog = 0; if(checklist.length > 0) prog = (checklist.filter(t=>t.done).length / checklist.length) * 100;
+            let progHTML = checklist.length > 0 ? `<div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${prog}%"></div></div>` : '';
+
+            const html = `<div class="glass-card p-4 rounded-2xl border-l-4 ${glowClass} mb-3" draggable="true" ondragstart="App.dragStart(event, ${i.id})" onclick="App.openOSModal(${i.id})"><div class="flex justify-between items-center mb-2"><span class="text-[9px] font-black uppercase text-gray-500">${i.setor}</span>${pgBadge}</div><h5 class="font-bold text-white mb-1 text-xs truncate">${i.cliente}</h5><p class="text-[9px] text-gray-400 italic mb-2 truncate">${i.modelo || '---'}</p><div class="flex justify-between items-center"><p class="text-[8px] font-black uppercase ${glowClass !== 'border-gray-800' ? 'text-white' : 'text-gray-600'}">SLA: ${i.dataConclusao ? i.dataConclusao.split('-').reverse().join('/') : 'S/P'}</p><span class="text-[#ffb347] font-black text-[10px]">R$ ${Number(i.total).toFixed(2)}</span></div>${progHTML}</div>`;
+            if(i.tipo === 'Orcamento') colsMap["Orcamentos"] += html; else if(colsMap[i.status] !== undefined) colsMap[i.status] += html;
+        });
+
+        let finalHTML = `<div class="kanban-col bg-[#ffb347]/10 p-5 rounded-[2rem] shrink-0 border border-[#ffb347]/20" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.dropOS(event, 'Orcamentos')"><h4 class="text-xs font-black text-[#ffb347] mb-4 uppercase tracking-widest">📝 Orçamentos</h4><div class="overflow-y-auto max-h-[65vh] pr-2 custom-scrollbar">${colsMap["Orcamentos"]}</div></div>`;
+        cfg.statusLista.forEach(s => {
+            if(s === "Entregue") return;
+            finalHTML += `<div class="kanban-col bg-white/5 p-5 rounded-[2rem] shrink-0" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.dropOS(event, '${s}')"><h4 class="text-xs font-black text-gray-500 mb-4 uppercase tracking-widest">${s}</h4><div class="overflow-y-auto max-h-[65vh] pr-2 custom-scrollbar">${colsMap[s]}</div></div>`;
+        });
+        container.innerHTML = finalHTML;
+    },
+
+    // --- CLIENTES CRM ---
+    async renderClientes() {
+        const q = document.getElementById('busca-cli').value.toLowerCase();
+        const cli = await db.clientes.toArray();
+        const filtered = cli.filter(i => i.nome.toLowerCase().includes(q) || (i.documento && i.documento.includes(q))).reverse();
+        document.getElementById('cli-table-body').innerHTML = filtered.map(i => `<tr class="border-b border-white/5"><td class="p-3">${i.nome}</td><td>${i.documento||'---'}</td><td>${i.telefone||''} / ${i.email||''}</td><td><button onclick="App.delCliente(${i.id})" class="text-gray-500 hover:text-red-500 text-[10px]">Excluir</button></td></tr>`).join("");
+    },
+    async addCliente() {
+        const n = document.getElementById('cad-cli-nome').value, d = document.getElementById('cad-cli-doc').value, t = document.getElementById('cad-cli-tel').value, e = document.getElementById('cad-cli-email').value, end = document.getElementById('cli-end').value;
+        if(!n) return this.toast("Preencha o Nome.", "error");
+        await db.clientes.add({nome: n, documento: d, telefone: t, email: e, end: end});
+        ['cad-cli-nome','cad-cli-doc','cad-cli-tel','cad-cli-email','cli-end'].forEach(x=>document.getElementById(x).value="");
+        this.renderClientes(); await this.pushToCloud(); this.toast("Cliente Salvo.");
+    },
+    async delCliente(id) { if(confirm("Excluir Cliente?")) { await db.clientes.delete(id); this.renderClientes(); await this.pushToCloud(); this.toast("Excluído."); } },
+    async fillCliData() {
+        const n = document.getElementById('f-cliente').value; if(!n) return;
+        const cli = await db.clientes.where("nome").equals(n).first();
+        if(cli) { document.getElementById('f-telefone').value = cli.telefone||""; document.getElementById('f-email').value = cli.email||""; this.toast("Dados do cliente preenchidos."); }
+    },
+
+    // --- FINANCEIRO E RH ---
+    async renderFin() {
+        const d = await db.despesas.toArray(); const c = await db.contratos.toArray();
+        document.getElementById('fin-despesas-body').innerHTML = d.map(i => `<tr class="border-b border-white/5"><td class="p-2">${i.data}</td><td>${i.descricao}</td><td>${i.categoria}</td><td class="${i.tipoMov==='Entrada'?'text-emerald-400':'text-red-400'}">${i.tipoMov==='Entrada'?'+':'-'} R$ ${Number(i.valor).toFixed(2)}</td><td><button onclick="App.delDespesa(${i.id})" class="text-gray-500 hover:text-red-500 text-[10px]">X</button></td></tr>`).join("");
+        document.getElementById('fin-contratos-body').innerHTML = c.map(i => `<tr class="border-b border-white/5"><td class="p-2">${i.cliente}</td><td>Dia ${i.diaVencimento}</td><td><span class="${i.status==='Ativo'?'text-emerald-400':'text-red-400'}">${i.status}</span></td><td class="text-blue-400">R$ ${Number(i.valor).toFixed(2)}</td><td><button onclick="App.delContrato(${i.id})" class="text-gray-500 hover:text-red-500 text-[10px]">X</button></td></tr>`).join("");
+    },
+    async addDespesa() {
+        const desc = document.getElementById('fin-desc').value, val = parseFloat(document.getElementById('fin-valor').value||0), cat = document.getElementById('fin-cat').value, dt = document.getElementById('fin-data').value, tMov = document.getElementById('fin-tipo').value;
+        if(!desc || !dt) return this.toast("Preencha descrição e data.", "error"); await db.despesas.add({ descricao: desc, valor: val, categoria: cat, data: dt, tipoMov: tMov }); this.toast("Lançamento Efetuado.");
+        document.getElementById('fin-desc').value = ""; document.getElementById('fin-valor').value = "0.00"; this.renderFin(); this.safeRefresh(); await this.pushToCloud();
+    },
+    async delDespesa(id) { await db.despesas.delete(id); this.renderFin(); this.safeRefresh(); await this.pushToCloud(); this.toast("Registro Apagado"); },
+    async addContrato() {
+        const cli = document.getElementById('fin-cli-cont').value, val = parseFloat(document.getElementById('fin-val-cont').value||0), dia = parseInt(document.getElementById('fin-dia-cont').value||0), sts = document.getElementById('fin-status-cont').value;
+        if(!cli || !dia) return this.toast("Preencha cliente e dia.", "error"); await db.contratos.add({ cliente: cli, valor: val, diaVencimento: dia, status: sts }); this.toast("Contrato Lançado.");
+        document.getElementById('fin-cli-cont').value = ""; document.getElementById('fin-val-cont').value = "0.00"; this.renderFin(); await this.pushToCloud();
+    },
+    async delContrato(id) { await db.contratos.delete(id); this.renderFin(); await this.pushToCloud(); this.toast("Contrato Apagado"); },
+
+    async baterPonto(tipo) { const usr = this.currentUser.nome; const data = new Date().toLocaleDateString(); const time = new Date().toLocaleTimeString(); await db.ponto.add({ usuario: usr, data: data, evento: tipo, timestamp: time }); this.toast(`Ponto: ${tipo}`); this.renderRH(); await this.pushToCloud(); },
+    async renderRH() { const p = await db.ponto.where("usuario").equals(this.currentUser.nome).reverse().limit(10).toArray(); document.getElementById('rh-ponto-list').innerHTML = p.map(i => `<tr><td class="py-2">${i.data}</td><td>${i.timestamp}</td><td><span class="bg-white/10 px-2 py-1 rounded text-white">${i.evento}</span></td></tr>`).join(""); },
+    
+    async simularComissao() {
+        const tec = document.getElementById('rh-com-nome').value; const mes = document.getElementById('rh-com-mes').value; const pct = parseFloat(document.getElementById('rh-com-pct').value||0);
+        if(!tec || !mes) return this.toast("Preencha o Operador e Mês.", "error");
+        const os = await db.os.toArray(); const osTec = os.filter(i => i.tecnico.toLowerCase().includes(tec.toLowerCase()) && i.dataSaida && i.dataSaida.startsWith(mes) && (i.status === 'Concluido' || i.status === 'Entregue'));
+        const total = osTec.reduce((a,b)=>a+Number(b.total||0), 0); const comissao = total * (pct / 100);
+        
+        document.getElementById('sim-os-count').innerText = osTec.length;
+        document.getElementById('sim-os-fat').innerText = `R$ ${total.toFixed(2)}`;
+        document.getElementById('sim-os-com').innerText = `R$ ${comissao.toFixed(2)}`;
+        document.getElementById('rh-simulacao-res').classList.remove('hidden');
+        this.toast("Simulação concluída!");
+    },
+
+    async gerarComissaoPDF() {
+        const tec = document.getElementById('rh-com-nome').value; const mes = document.getElementById('rh-com-mes').value; const pct = parseFloat(document.getElementById('rh-com-pct').value||0);
+        if(!tec || !mes) return this.toast("Preencha o Operador e Mês.", "error");
+        const os = await db.os.toArray(); const osTec = os.filter(i => i.tecnico.toLowerCase().includes(tec.toLowerCase()) && i.dataSaida && i.dataSaida.startsWith(mes) && (i.status === 'Concluido' || i.status === 'Entregue'));
+        const total = osTec.reduce((a,b)=>a+Number(b.total||0), 0); const comissao = total * (pct / 100);
+        let trs = osTec.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">#${i.id}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.cliente}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.dataSaida}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.total).toFixed(2)}</td></tr>`).join("");
+        const win = window.open('', 'PRINT'); win.document.write(`<html><head><style>body{font-family:sans-serif;padding:20px} table{width:100%;border-collapse:collapse;margin-top:20px; font-size:12px;} th{background:#eee;padding:10px;text-align:left}</style></head><body><h1>Relatório de Comissionamento</h1><p><b>Técnico/Operador:</b> ${tec}<br><b>Período:</b> ${mes}<br><b>O.S. Finalizadas:</b> ${osTec.length}<br><b>Faturamento Gerado:</b> R$ ${total.toFixed(2)}<br><b>Comissão (${pct}%):</b> <b style="color:green; font-size:18px;">R$ ${comissao.toFixed(2)}</b></p><table><thead><tr><th>OS</th><th>Cliente</th><th>Data Entrega</th><th>Valor</th></tr></thead><tbody>${trs}</tbody></table><script>setTimeout(()=>{window.print();window.close();},800);<\/script></body></html>`);
+    },
+
+    // --- CRM ---
+    async gerarDossieCliente() {
+        const q = document.getElementById('hist-search').value.toLowerCase(); if(!q) return this.toast("Busque o cliente primeiro.", "error");
+        const os = await db.os.toArray(); const osCli = os.filter(i => i.cliente.toLowerCase() === q || i.cliente.toLowerCase().includes(q)).reverse();
+        if(osCli.length === 0) return this.toast("Nenhuma OS encontrada.", "error");
+        const totalFaturado = osCli.reduce((a,b)=>a+Number(b.total||0), 0);
+        let trs = osCli.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">#${i.id}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.dataEntrada}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.setor} / ${i.modelo}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.status}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.total).toFixed(2)}</td></tr>`).join("");
+        const win = window.open('', 'PRINT'); win.document.write(`<html><head><style>body{font-family:sans-serif;padding:20px} table{width:100%;border-collapse:collapse;margin-top:20px; font-size:12px;} th{background:#eee;padding:10px;text-align:left}</style></head><body><h1>Dossiê de Cliente</h1><p><b>Cliente:</b> ${osCli[0].cliente}<br><b>Telefone:</b> ${osCli[0].telefone||'---'}<br><b>Total Investido (LTV):</b> <b style="color:blue;">R$ ${totalFaturado.toFixed(2)}</b></p><table><thead><tr><th>OS</th><th>Data Entrada</th><th>Serviço/Equipamento</th><th>Status</th><th>Valor</th></tr></thead><tbody>${trs}</tbody></table><script>setTimeout(()=>{window.print();window.close();},800);<\/script></body></html>`);
+    },
+
+    // --- ESTOQUE ---
+    async renderEstoque() {
+        const est = await db.estoque.toArray(); const tbody = document.getElementById('estoque-table-body'); let pat = 0;
+        tbody.innerHTML = est.map(i => { const isLow = i.qtd <= i.min; pat += (i.qtd * i.preco); return `<tr class="table-row border-b border-white/5"><td class="p-3">${i.nome}</td><td><b class="${isLow ? 'text-red-500' : 'text-emerald-400'}">${i.qtd}</b></td><td class="text-gray-500">${i.min}</td><td class="text-[#ffb347]">R$ ${Number(i.preco).toFixed(2)}</td><td><button onclick="App.addQtdEstoque(${i.id}, 1)" class="px-2 bg-emerald-500/20 text-emerald-400 rounded mr-1">+</button><button onclick="App.addQtdEstoque(${i.id}, -1)" class="px-2 bg-red-500/20 text-red-500 rounded mr-1">-</button><button onclick="App.delEstoque(${i.id})" class="text-gray-600 hover:text-red-500">Del</button></td></tr>`; }).join("");
+        document.getElementById('est-patrimonio').innerText = `Patrimônio em Estoque: R$ ${pat.toFixed(2)}`;
+    },
+    async addEstoque() {
+        const n = document.getElementById('est-nome').value; const q = parseInt(document.getElementById('est-qtd').value || 0); const m = parseInt(document.getElementById('est-min').value || 0); const p = parseFloat(document.getElementById('est-preco').value || 0);
+        if(!n) return this.toast("Preencha o nome do item.", "error"); await db.estoque.add({ nome: n, qtd: q, min: m, preco: p }); document.getElementById('est-nome').value = ""; document.getElementById('est-qtd').value = "0"; document.getElementById('est-preco').value = "0.00"; this.renderEstoque(); await this.pushToCloud(); this.toast("Item salvo!");
+    },
+    async addQtdEstoque(id, val) { const item = await db.estoque.get(id); if(item) { item.qtd += val; if(item.qtd < 0) item.qtd = 0; await db.estoque.update(id, { qtd: item.qtd }); this.renderEstoque(); await this.pushToCloud(); } },
+    async delEstoque(id) { if(confirm("Excluir item?")) { await db.estoque.delete(id); this.renderEstoque(); await this.pushToCloud(); this.toast("Excluído."); } },
+
+    // --- FERRAMENTAS DE OFICINA PRO ---
+    setPapel(l, a) { document.getElementById('papel-folha-l').value = l; document.getElementById('papel-folha-a').value = a; this.toast("Tamanho aplicado."); },
+    calcPapel() {
+        const FL = parseFloat(document.getElementById('papel-folha-l').value || 0); const FA = parseFloat(document.getElementById('papel-folha-a').value || 0); const CL = parseFloat(document.getElementById('papel-corte-l').value || 0); const CA = parseFloat(document.getElementById('papel-corte-a').value || 0);
+        if(!FL || !FA || !CL || !CA) return this.toast("Preencha todas as medidas em MM.", "error");
+        const areaFolha = FL * FA; const areaCorte = CL * CA; const t1 = Math.floor(FL / CL) * Math.floor(FA / CA); const t2 = Math.floor(FL / CA) * Math.floor(FA / CL); const melhorTotal = Math.max(t1, t2); const sobra = areaFolha - (melhorTotal * areaCorte); const sobraPct = ((sobra / areaFolha) * 100).toFixed(1);
+        document.getElementById('res-papel-info').innerText = `MÁXIMO: ${melhorTotal} CORTES.`; document.getElementById('res-papel-sobra').innerHTML = `SOBRA: ${sobra.toLocaleString()} mm² (${sobraPct}%)`;
+        const area = document.getElementById('res-papel-visual'); area.innerHTML = "";
+        const uX = t1 >= t2 ? Math.floor(FL / CL) : Math.floor(FL / CA); const uY = t1 >= t2 ? Math.floor(FA / CA) : Math.floor(FA / CL); const widthPct = ((t1 >= t2 ? CL : CA) / FL) * 100; const heightPct = ((t1 >= t2 ? CA : CL) / FA) * 100;
+        for(let i=0; i < melhorTotal; i++){ const div = document.createElement('div'); div.style.width = `${widthPct}%`; div.style.height = `${heightPct}%`; div.className = "border border-[#ffb347] bg-[#ffb347]/20 flex items-center justify-center text-[10px] font-bold text-[#ffb347]"; div.innerText = i + 1; area.appendChild(div); }
+        if(sobraPct > 0) { const divSobra = document.createElement('div'); divSobra.style.flexGrow = "1"; divSobra.className = "bg-red-500/20 border border-red-500/50 flex items-center justify-center text-[8px] text-red-500"; divSobra.innerText = "SOBRA"; area.appendChild(divSobra); }
+        this.toast("Cálculo de papel gerado!");
+    },
+    
+    setLombadaPreset(val) {
+        if(!val) return;
+        const pts = val.split('|'); // Nome|Gramatura|Fator
+        document.getElementById('lomb-papel').value = pts[0];
+        document.getElementById('lomb-gram').value = pts[1];
+        document.getElementById('lomb-fat').value = pts[2];
+        this.toast("Preset aplicado.");
+    },
+
+    async calcLombada() {
+        const proj = document.getElementById('lomb-proj').value || "S/N";
+        const papel = document.getElementById('lomb-papel').value;
+        const gram = document.getElementById('lomb-gram').value;
+        const fat = parseFloat(document.getElementById('lomb-fat').value || 0);
+        const pag = parseInt(document.getElementById('lomb-pag').value || 0);
+        if(!fat || !pag) return this.toast("Fator e Páginas são obrigatórios.", "error");
+
+        const esp = (pag / 2) * fat;
+        document.getElementById('res-lombada-final').innerHTML = `${esp.toFixed(2)}<span class="text-sm text-gray-500">mm</span>`;
+        document.getElementById('gab-l').value = esp.toFixed(2);
+        
+        // Salva histórico
+        const dt = new Date().toLocaleDateString();
+        await db.lombadas.add({ projeto: proj, papel: papel, gramatura: gram, espessura: esp.toFixed(2), data: dt });
+        this.renderLombadaHist();
+        this.toast("Medida salva no Histórico!");
+    },
+
+    async renderLombadaHist() {
+        const h = await db.lombadas.reverse().toArray();
+        document.getElementById('lombada-historico-body').innerHTML = h.map(i => `<tr class="border-b border-white/5"><td class="p-2">${i.projeto}</td><td>${i.papel}</td><td>${i.paginas||'-'}</td><td class="text-[#ffb347] font-black">${i.espessura} mm</td></tr>`).join("");
+    },
+
+    // MONTAGEM CANVA LITE
+    loadGabImg(lado, part, input) { if(input.files && input.files[0]) { const reader = new FileReader(); reader.onload = e => { this.gabImages[lado][part] = e.target.result; this.calcGabarito(); this.toast(`Arte inserida`); }; reader.readAsDataURL(input.files[0]); } },
+    limparGabarito() { this.gabImages = { frente: { o1:'', cc:'', l:'', cf:'', o2:'' }, verso: { o1:'', cc:'', l:'', cf:'', o2:'' } }; document.querySelectorAll('#tool-capa input[type="file"]').forEach(i => i.value = ""); document.getElementById('gab-txt-front').value=""; document.getElementById('gab-txt-spine').value=""; this.calcGabarito(); this.toast("Artes removidas."); },
+    calcGabarito() {
+        const o1 = parseFloat(document.getElementById('gab-o1').value || 0); const cc = parseFloat(document.getElementById('gab-cc').value || 0); const l = parseFloat(document.getElementById('gab-l').value || 0); const cf = parseFloat(document.getElementById('gab-cf').value || 0); const o2 = parseFloat(document.getElementById('gab-o2').value || 0); const h = parseFloat(document.getElementById('gab-h').value || 0); const s = parseFloat(document.getElementById('gab-sangria').value || 0);
+        if(!cc || !cf || !h) return this.toast("Preencha Capas.", "error");
+        
+        const txtFront = document.getElementById('gab-txt-front').value; const txtSpine = document.getElementById('gab-txt-spine').value; const txtColor = document.getElementById('gab-txt-color').value;
+
+        const totalW = o1 + cc + l + cf + o2 + (s * 2); const totalH = h + (s * 2); document.getElementById('gab-res-artboard').innerText = `${totalW.toFixed(1)} mm x ${totalH.toFixed(1)} mm`; document.getElementById('gab-res-sangria').innerText = `${s} mm`;
+        const viewMode = document.getElementById('gab-view-mode').value; const pS = (s / totalW) * 100; const pO1 = (o1 / totalW) * 100; const pCC = (cc / totalW) * 100; const pL = (l / totalW) * 100; const pCF = (cf / totalW) * 100; const pO2 = (o2 / totalW) * 100;
+        
+        const box = document.getElementById('gab-preview-box'); let htmlBlocks = `<div class="h-full bg-red-500/20 gab-part text-red-500 border-r-0" style="width:${pS}%"></div>`;
+        
+        if(viewMode === 'frente') {
+            if(o1>0) htmlBlocks += `<div class="h-full bg-blue-500/20 gab-part" style="width:${pO1}%; ${this.gabImages.frente.o1 ? `background-image:url('${this.gabImages.frente.o1}')` : ''}">${this.gabImages.frente.o1?'':'O.ESQ'}</div>`;
+            htmlBlocks += `<div class="h-full bg-gray-500/20 gab-part" style="width:${pCC}%; ${this.gabImages.frente.cc ? `background-image:url('${this.gabImages.frente.cc}')` : ''}">${this.gabImages.frente.cc?'':'CON. CAPA'}</div>`;
+            if(l>0) htmlBlocks += `<div class="h-full bg-orange-500/40 gab-part border-x-2 border-orange-500" style="width:${pL}%; ${this.gabImages.frente.l ? `background-image:url('${this.gabImages.frente.l}')` : ''}">${this.gabImages.frente.l?'':''}<div class="overlay-txt" style="color:${txtColor}; transform:rotate(-90deg); font-size:12px;">${txtSpine}</div></div>`;
+            htmlBlocks += `<div class="h-full bg-gray-500/20 gab-part" style="width:${pCF}%; ${this.gabImages.frente.cf ? `background-image:url('${this.gabImages.frente.cf}')` : ''}">${this.gabImages.frente.cf?'':''}<div class="overlay-txt" style="color:${txtColor}; font-size:20px; top:10%">${txtFront}</div></div>`;
+            if(o2>0) htmlBlocks += `<div class="h-full bg-blue-500/20 gab-part" style="width:${pO2}%; ${this.gabImages.frente.o2 ? `background-image:url('${this.gabImages.frente.o2}')` : ''}">${this.gabImages.frente.o2?'':'O.DIR'}</div>`;
+        } else {
+            if(o2>0) htmlBlocks += `<div class="h-full bg-blue-500/20 gab-part" style="width:${pO2}%; ${this.gabImages.verso.o2 ? `background-image:url('${this.gabImages.verso.o2}')` : ''}">${this.gabImages.verso.o2?'':'O.DIR (V)'}</div>`;
+            htmlBlocks += `<div class="h-full bg-gray-500/20 gab-part" style="width:${pCF}%; ${this.gabImages.verso.cf ? `background-image:url('${this.gabImages.verso.cf}')` : ''}">${this.gabImages.verso.cf?'':'CAPA FRO (V)'}</div>`;
+            if(l>0) htmlBlocks += `<div class="h-full bg-orange-500/40 gab-part border-x-2 border-orange-500" style="width:${pL}%; ${this.gabImages.verso.l ? `background-image:url('${this.gabImages.verso.l}')` : ''}">${this.gabImages.verso.l?'':'LOM'}</div>`;
+            htmlBlocks += `<div class="h-full bg-gray-500/20 gab-part" style="width:${pCC}%; ${this.gabImages.verso.cc ? `background-image:url('${this.gabImages.verso.cc}')` : ''}">${this.gabImages.verso.cc?'':'CON. CAPA (V)'}</div>`;
+            if(o1>0) htmlBlocks += `<div class="h-full bg-blue-500/20 gab-part" style="width:${pO1}%; ${this.gabImages.verso.o1 ? `background-image:url('${this.gabImages.verso.o1}')` : ''}">${this.gabImages.verso.o1?'':'O.ESQ (V)'}</div>`;
+        }
+        htmlBlocks += `<div class="h-full bg-red-500/20 gab-part text-red-500 border-l-0" style="width:${pS}%"></div>`;
+        box.innerHTML = `<div class="flex w-full h-[85%] absolute top-[7.5%] px-[${s}px] border-y border-dashed border-red-500">${htmlBlocks}</div>`;
+    },
+
+    calcDPI() { const w = parseFloat(document.getElementById('dpi-w').value || 0); const h = parseFloat(document.getElementById('dpi-h').value || 0); const dpi = parseInt(document.getElementById('dpi-res').value || 300); if(!w || !h) return this.toast("Insira medidas em CM.", "error"); const pxW = Math.round((w / 2.54) * dpi); const pxH = Math.round((h / 2.54) * dpi); document.getElementById('res-dpi-master').innerHTML = `${pxW} x ${pxH} <span class="text-sm text-gray-500">px</span>`; document.getElementById('res-dpi-master').classList.remove('hidden'); this.toast("Pixels calculados."); },
+    converterImagem() { const fileInput = document.getElementById('conv-file'); const format = document.getElementById('conv-format').value; if(!fileInput.files || !fileInput.files[0]) return this.toast("Selecione uma imagem.", "error"); const img = new Image(); img.onload = function() { const cvs = document.getElementById('conv-canvas'); cvs.width = img.width; cvs.height = img.height; const ctx = cvs.getContext('2d'); ctx.drawImage(img, 0, 0); const link = document.createElement('a'); link.download = `Conv.${format.split('/')[1]}`; link.href = cvs.toDataURL(format, 0.9); link.click(); App.toast("Convertida!"); }; img.src = URL.createObjectURL(fileInput.files[0]); },
+    
+    // REDE E OUTROS
+    async testarInternet() {
+        const el = document.getElementById('res-net'); el.innerHTML = "<div class='loader'></div> <span class='text-white ml-2 text-xs'>Sondando rotas TCP/IP...</span>";
+        try {
+            const ipReq = await fetch('https://api.ipify.org?format=json'); const ipData = await ipReq.json();
+            const startDl = performance.now(); await fetch('https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg?cache=' + Math.random(), { cache: 'no-store', mode: 'no-cors' }); const endDl = performance.now();
+            const dur = (endDl - startDl) / 1000; let dlSpeed = (12 / dur).toFixed(2); if(dlSpeed > 500) dlSpeed = "500+";
+            el.innerHTML = `<div class="grid grid-cols-2 gap-3 text-left text-xs w-full mt-2"><div class="bg-black/40 p-4 rounded-xl border border-white/5"><span class="text-gray-500 block text-[9px] uppercase font-bold">IP Externo</span><span class="text-emerald-400 font-black text-lg">${ipData.ip}</span></div><div class="bg-black/40 p-4 rounded-xl border border-white/5"><span class="text-gray-500 block text-[9px] uppercase font-bold">Download Estimado</span><span class="text-emerald-400 font-black text-2xl">~${dlSpeed} <span class="text-sm">Mbps</span></span></div></div>`; el.className = "mt-4 p-2 bg-transparent w-full";
+        } catch(e) { el.innerHTML = "❌ <b class='text-red-500'>FALHA NA ROTA.</b>"; el.className = "mt-4 p-6 bg-black/50 rounded-xl text-center text-sm font-bold text-red-500 border border-red-500/20"; }
+    },
+    async testarDNS() { const host = document.getElementById('dns-host').value; const resEl = document.getElementById('res-dns'); if(!host) return; resEl.innerHTML = "Buscando..."; try { const resp = await fetch(`https://dns.google/resolve?name=${host}&type=A`); const data = await resp.json(); if(data.Answer) { resEl.innerHTML = data.Answer.map(a => `• ${a.name} -> ${a.data}`).join("<br>"); } else { resEl.innerHTML = "Não encontrado."; } } catch(e) { resEl.innerHTML = "Falha."; } },
+
+    // --- CHECKLISTS OS ---
+    renderChecklist(setor) {
+        const box = document.getElementById('os-checklist-container'); let hidden = document.getElementById('f-checklist-hidden'); let checks = []; try { checks = JSON.parse(hidden.value || "[]"); } catch(e){}
+        if(checks.length === 0 && defaultChecklists[setor]) { checks = JSON.parse(JSON.stringify(defaultChecklists[setor])); hidden.value = JSON.stringify(checks); }
+        if(checks.length > 0) { box.innerHTML = checks.map((c, idx) => `<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="chk-custom" ${c.done ? 'checked' : ''} onchange="App.toggleChecklist(${idx}, this.checked)"><span class="${c.done ? 'line-through text-gray-500' : ''}">${c.task}</span></label>`).join(""); } else { box.innerHTML = "Sem tarefas para este setor."; }
+    },
+    toggleChecklist(idx, isChecked) { let hidden = document.getElementById('f-checklist-hidden'); let checks = []; try { checks = JSON.parse(hidden.value || "[]"); } catch(e){} if(checks[idx]) checks[idx].done = isChecked; hidden.value = JSON.stringify(checks); this.renderChecklist(document.getElementById('f-setor-select').value); },
+
+    // --- FOTOS NA OS ---
+    loadOSImage(hiddenId, input) {
+        if(input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const cvs = document.createElement('canvas'); const MAX_WIDTH = 800; let width = img.width; let height = img.height;
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    cvs.width = width; cvs.height = height; const ctx = cvs.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                    const b64 = cvs.toDataURL('image/jpeg', 0.6); 
+                    document.getElementById(hiddenId + '-b64').value = b64; document.getElementById(hiddenId + '-box').innerHTML = `<img src="${b64}" class="w-full h-full object-cover">`; App.toast("Foto anexada à OS.");
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    },
+
+    async printProvaVirtual() {
+        const imgB64 = document.getElementById('f-img-1-b64').value; if(!imgB64) return this.toast("Suba uma foto no 'Estúdio (Foto 1)' primeiro.", "error");
+        const cli = document.getElementById('f-cliente').value || "Cliente"; const cfg = await db.config.get(1);
+
+        const win = window.open('', 'PRINT');
+        win.document.write(`<html><head><style>body{font-family:sans-serif; text-align:center; padding:20px; background:#e2e8f0;} .container{background:white; max-width:800px; margin:0 auto; padding:40px; border-radius:10px; position:relative;} .watermark { position:absolute; top:40%; left:50%; transform:translate(-50%, -50%) rotate(-30deg); font-size:80px; color:rgba(239,68,68,0.2); font-weight:900; pointer-events:none; text-transform:uppercase; z-index:10; white-space:nowrap;} img.arte { max-width:100%; max-height:500px; border:2px solid #ccc; position:relative; z-index:5;} .footer { margin-top:40px; font-size:12px; color:#555; text-align:justify; border-top:1px solid #ddd; padding-top:20px;} @media print { body{background:white;} .container{box-shadow:none;} *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }</style></head><body><div class="container"><div class="watermark">APROVAÇÃO DE ARTE</div><h2 style="color:#333;">PROVA VIRTUAL - ${cfg.nomeEmpresa}</h2><p style="color:#666;">Cliente: <b>${cli}</b></p><br><img src="${imgB64}" class="arte"><br><div class="footer"><b>TERMO DE APROVAÇÃO:</b><br>Confirmo que verifiquei todos os detalhes desta arte (textos, cores, proporções). Ao aprovar, autorizo a produção. A empresa não se responsabiliza por erros não notados pelo cliente antes da impressão.<br><br><br><div style="border-top:1px solid #333; width:300px; margin:0 auto; text-align:center; padding-top:5px;">Assinatura do Cliente / Aceite Eletrônico no WhatsApp</div></div></div><script>setTimeout(()=>{window.print();window.close();}, 800);<\/script></body></html>`);
+        this.toast("Gerando Prova Virtual Blindada...");
+    },
+
+    async printEtiquetaTermica() {
+        const id = document.getElementById('f-id').value; if(!id) return this.toast("Salve a O.S. antes.", "error");
+        const cli = document.getElementById('f-cliente').value || "S/N"; const cfg = await db.config.get(1); const dataUrl = await QRCode.toDataURL(`O.S. ${id} | ${cli}`, { width: 100, margin: 1 });
+        const win = window.open('', 'PRINT', 'width=400,height=600'); win.document.write(`<html><head><style>@page { size: 80mm 100mm; margin: 0; } body { font-family: sans-serif; text-align: center; margin: 0; padding: 10px; width: 75mm; } h2 { margin: 5px 0; font-size: 16px; } p { margin: 2px 0; font-size: 12px; } img { margin-top: 10px; } *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }</style></head><body><h2>${cfg.nomeEmpresa}</h2><p><b>O.S. #${id}</b></p><p>Cli: ${cli}</p><p>${new Date().toLocaleDateString()}</p><img src="${dataUrl}"><script>setTimeout(()=>{window.print();window.close();}, 500);<\/script></body></html>`);
+    },
+
+    async openCommsModal() { let id = document.getElementById('f-id').value; if(!id) { await this.saveOS(true); id = document.getElementById('f-id').value; if(!id) return this.toast("Erro ao gerar O.S.", "error"); } else { await this.saveOS(true); } document.getElementById('modal-comms').classList.remove('hidden'); },
+    async executeComms(type) {
+        const id = document.getElementById('f-id').value; const cfg = await db.config.get(1);
+        const cli = document.getElementById('f-cliente').value || "Cliente"; const sts = document.getElementById('f-status-select').value;
+        const prev = document.getElementById('f-conclusao').value ? document.getElementById('f-conclusao').value.split('-').reverse().join('/') : "A definir";
+        const t = parseFloat(document.getElementById('f-total').value || 0); const e = parseFloat(document.getElementById('f-entrada-sinal').value || 0); const val = (t - e).toFixed(2);
+        const resumo = document.getElementById('f-parecer-externo').value || "Sem atualizações detalhadas.";
+        const serv = document.getElementById('f-modelo').value || document.getElementById('f-setor-select').value;
+        const tipoOS = document.getElementById('f-tipo').value === 'Orcamento' ? 'ORÇAMENTO' : 'ORDEM DE SERVIÇO';
+
+        const incStatus = document.getElementById('chk-status').checked; const incPrazo = document.getElementById('chk-prazo').checked;
+        const incValor = document.getElementById('chk-valor').checked; const incResumo = document.getElementById('chk-resumo').checked;
+
+        let texto = `*ATUALIZAÇÃO DE ${tipoOS}*\n\nOlá, *${cli}*!\nAqui é da equipe *${cfg.nomeEmpresa}*.\n\nTrazemos atualizações sobre o seu pedido *#${id}* (${serv}).\n\n`;
+        if(incStatus) texto += `⚙️ *Status Atual:* ${sts}\n`; if(incPrazo) texto += `📅 *Previsão / SLA:* ${prev}\n`; if(incValor) texto += `💰 *Saldo Devedor:* R$ ${val}\n`;
+        if(incResumo) texto += `\n📢 *Mensagem da Equipe:*\n${resumo}\n`; texto += `\nAgradecemos a confiança!`;
+
+        if(type === 'wa') { const fone = document.getElementById('f-telefone').value.replace(/\D/g, ''); if(!fone) { return this.toast("Preencha o WhatsApp na OS.", "error"); } this.addProntuarioRegistro(`WhatsApp Disparado.`); window.open(`https://wa.me/55${fone}?text=${encodeURIComponent(texto)}`, '_blank'); } 
+        else { const email = document.getElementById('f-email').value; if(!email) { return this.toast("Preencha o E-mail na OS.", "error"); } const subject = encodeURIComponent(`Atualização ${tipoOS} #${id} - ${cfg.nomeEmpresa}`); this.addProntuarioRegistro(`E-mail Enviado.`); window.location.href = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(texto.replace(/\*/g, ''))}`; }
+        document.getElementById('modal-comms').classList.add('hidden');
+    },
+
+    addProntuarioRegistro(nota) { const el = document.getElementById('f-interacoes'); let hist = []; try { hist = JSON.parse(el.value || "[]"); } catch(e){} hist.unshift({ data: new Date().toLocaleString(), nota }); el.value = JSON.stringify(hist); this.renderProntuario(hist); this.saveOS(true); },
+    renderProntuario(hist) { const box = document.getElementById('prontuario-lista'); if(!hist || hist.length === 0) box.innerHTML = "Aguardando interações..."; else box.innerHTML = hist.map(h => `<div class="border-l-2 border-blue-400 pl-2 mb-1"><b>[${h.data}]</b> ${h.nota}</div>`).join(""); },
+    addTextToField(fieldId, text) { const field = document.getElementById(fieldId); field.value += (field.value.length > 0 ? "\n" : "") + text; this.toast("Texto Rápido inserido."); },
+
+    // --- ALMOXARIFADO NA O.S. ---
+    async addPecaOS() {
+        const select = document.getElementById('os-add-peca'); const qtdInput = document.getElementById('os-add-peca-qtd'); const estId = parseInt(select.value); const qtdUsada = parseInt(qtdInput.value || 1);
+        if(!estId || isNaN(estId)) return; const itemEst = await db.estoque.get(estId); if(!itemEst) return;
+        if(itemEst.qtd < qtdUsada) return this.toast(`Estoque insuficiente! Restam ${itemEst.qtd} unid.`, "error");
+        
+        await db.estoque.update(estId, { qtd: itemEst.qtd - qtdUsada }); await this.pushToCloud();
+        const hiddenEl = document.getElementById('f-pecas-hidden'); let pecasOS = []; try { pecasOS = JSON.parse(hiddenEl.value || "[]"); } catch(e){}
+        pecasOS.push({ idEstoque: estId, nome: itemEst.nome, qtd: qtdUsada, preco: itemEst.preco }); hiddenEl.value = JSON.stringify(pecasOS);
+        
+        const totalEl = document.getElementById('f-total'); totalEl.value = (parseFloat(totalEl.value || 0) + (itemEst.preco * qtdUsada)).toFixed(2);
+        this.renderPecasOS(pecasOS); this.addProntuarioRegistro(`+ ${qtdUsada}x ${itemEst.nome} abatido do estoque.`); this.calcSaldoOS();
+    },
+    renderPecasOS(pecasOS) { const listEl = document.getElementById('os-pecas-list'); if(!pecasOS || pecasOS.length === 0) { listEl.innerHTML = "Nenhum insumo."; return; } listEl.innerHTML = pecasOS.map(p => `• ${p.qtd}x ${p.nome} (R$ ${(p.preco*p.qtd).toFixed(2)})`).join("<br>"); },
+    calcSaldoOS() { const t = parseFloat(document.getElementById('f-total').value || 0); const e = parseFloat(document.getElementById('f-entrada-sinal').value || 0); document.getElementById('f-saldo').value = `R$ ${(t - e).toFixed(2)}`; },
+
+    uiAjuste() {
+        const setor = document.getElementById('f-setor-select').value; const mod = document.getElementById('lbl-modelo'), ser = document.getElementById('lbl-serie'); const pecasBox = document.getElementById('box-pecas-os');
+        if(["Design", "Diagramação"].includes(setor)) { mod.innerText = "TÍTULO DO PROJETO"; ser.innerText = "FORMATO DE ENTREGA"; if(pecasBox) pecasBox.style.display = 'none'; } 
+        else { mod.innerText = "MODELO / EQUIPAMENTO"; ser.innerText = "Nº DE SÉRIE / TAG"; if(pecasBox) pecasBox.style.display = 'block'; }
+        this.renderChecklist(setor);
+    },
+
+    // AUTOMACAO FINANCEIRA NO SAVE
+    async handleAutomaçãoFinanceira(oldPgto, newPgto, total, sinal, idOS, cliente) {
+        if (oldPgto !== 'Pago' && newPgto === 'Pago') {
+            const valReceber = total - sinal;
+            if(valReceber > 0) {
+                if(confirm(`O.S. #${idOS} PAGA.\nLançar o saldo de R$ ${valReceber.toFixed(2)} no Caixa como Receita?`)) {
+                    const dt = new Date().toISOString().split('T')[0];
+                    await db.despesas.add({ descricao: `Pgto O.S. #${idOS} - ${cliente}`, valor: valReceber, categoria: 'Serviço/Venda', data: dt, tipoMov: 'Entrada' });
+                    this.toast("Valor lançado no fluxo de caixa!");
+                }
+            }
+        }
+    },
+
+    async saveOS(silent = false) {
+        const perfil = this.currentUser ? this.currentUser.perfil : 'admin';
+        if(perfil === 'visualizador') { if(!silent) this.toast("Sem permissão.", "error"); return; }
+        if(!silent) { document.getElementById('btn-save-text').classList.add('hidden'); document.getElementById('save-loader').classList.remove('hidden'); document.getElementById('btn-save-os').disabled = true; }
+
+        try {
+            const cfg = await db.config.get(1);
+            let id = document.getElementById('f-id').value;
+            let interacoes = []; try { interacoes = JSON.parse(document.getElementById('f-interacoes').value || "[]"); } catch(e){}
+            let pecas = []; try { pecas = JSON.parse(document.getElementById('f-pecas-hidden').value || "[]"); } catch(e){}
+            let checklist = []; try { checklist = JSON.parse(document.getElementById('f-checklist-hidden').value || "[]"); } catch(e){}
+
+            const data = {
+                tipo: document.getElementById('f-tipo').value, pagamento: document.getElementById('f-pagamento').value,
+                cliente: document.getElementById('f-cliente').value, telefone: document.getElementById('f-telefone').value, email: document.getElementById('f-email').value,
+                setor: document.getElementById('f-setor-select').value, tecnico: document.getElementById('f-tecnico').value, modelo: document.getElementById('f-modelo').value, 
+                serie: document.getElementById('f-serie').value, total: parseFloat(document.getElementById('f-total').value || 0), entrada: parseFloat(document.getElementById('f-entrada-sinal').value || 0),
+                laudo: document.getElementById('f-laudo').value, parecerExterno: document.getElementById('f-parecer-externo').value,
+                status: document.getElementById('f-status-select').value, prioridade: document.getElementById('f-prioridade').value, 
+                dataEntrada: document.getElementById('f-entrada').value, dataInicio: document.getElementById('f-inicio').value,
+                dataConclusao: document.getElementById('f-conclusao').value, dataSaida: document.getElementById('f-saida').value,
+                interacoes: JSON.stringify(interacoes), pecas: JSON.stringify(pecas), checklist: JSON.stringify(checklist),
+                fotoAntes: document.getElementById('f-img-1-b64').value, fotoDepois: document.getElementById('f-img-2-b64').value
+            };
+
+            if(id) { 
+                const oldOS = await db.os.get(Number(id)); await db.os.update(Number(id), data); 
+                if(oldOS && oldOS.pagamento !== data.pagamento) { await this.handleAutomaçãoFinanceira(oldOS.pagamento, data.pagamento, data.total, data.entrada, id, data.cliente); }
+            } 
+            else { 
+                if(cfg.numAuto === "true" || cfg.numAuto === true) { data.id = cfg.seqOS; await db.config.update(1, {seqOS: cfg.seqOS + 1}); }
+                else { const manualId = parseInt(document.getElementById('f-id').value); if(manualId) data.id = manualId; }
+
+                const newId = await db.os.add(data); document.getElementById('f-id').value = newId; document.getElementById('os-id-display').innerText = `#${newId}`; 
+                if(data.pagamento === 'Pago') { await this.handleAutomaçãoFinanceira('Pendente', 'Pago', data.total, data.entrada, newId, data.cliente); }
+            }
+            
+            await this.pushToCloud();
+            if(!silent) { this.closeOSModal(); this.safeRefresh(); this.toast("Salvo!"); }
+        } catch(e) { console.error(e); if(!silent) this.toast("Falha ao salvar.", "error"); } 
+        finally { if(!silent) { document.getElementById('btn-save-text').classList.remove('hidden'); document.getElementById('save-loader').classList.add('hidden'); document.getElementById('btn-save-os').disabled = false; } }
+    },
+
+    async openOSModal(id = null) {
+        const cfg = await db.config.get(1); const est = await db.estoque.toArray(); const snips = await db.snippets.toArray(); const cli = await db.clientes.toArray();
+        document.getElementById('f-status-select').innerHTML = cfg.statusLista.map(s => `<option value="${s}">${s}</option>`).join("");
+        document.getElementById('f-setor-select').innerHTML = cfg.setoresLista.map(s => `<option value="${s}">${s}</option>`).join("");
+        document.getElementById('os-add-peca').innerHTML = `<option value="">Selecione Insumo</option>` + est.map(i => `<option value="${i.id}">${i.nome} (Disp: ${i.qtd}) - R$ ${i.preco}</option>`).join("");
+        document.getElementById('cli-datalist').innerHTML = cli.map(i => `<option value="${i.nome}">`).join("");
+        document.getElementById('snippets-internos').innerHTML = snips.filter(s=>s.tipo!=='externo').map(s=>`<button onclick="App.addTextToField('f-laudo','${s.texto}')" class="snippet-btn">${s.texto.substring(0,25)}</button>`).join(""); document.getElementById('snippets-externos').innerHTML = snips.filter(s=>s.tipo!=='interno').map(s=>`<button onclick="App.addTextToField('f-parecer-externo','${s.texto}')" class="snippet-btn">${s.texto.substring(0,25)}</button>`).join("");
+        
+        document.getElementById('modal-os').classList.remove('hidden');
+        
+        if(id) {
+            db.os.get(Number(id)).then(i => {
+                document.getElementById('f-id').value = i.id; document.getElementById('os-id-display').innerText = `#${i.id}`; document.getElementById('f-id').readOnly = true;
+                document.getElementById('f-tipo').value = i.tipo || "OS"; document.getElementById('f-pagamento').value = i.pagamento || "Pendente";
+                document.getElementById('f-cliente').value = i.cliente || ""; document.getElementById('f-telefone').value = i.telefone || ""; document.getElementById('f-email').value = i.email || ""; document.getElementById('f-tecnico').value = i.tecnico || "Jorge Augusto"; 
+                document.getElementById('f-modelo').value = i.modelo || ""; document.getElementById('f-serie').value = i.serie || ""; 
+                document.getElementById('f-total').value = i.total || ""; document.getElementById('f-entrada-sinal').value = i.entrada || "0.00";
+                document.getElementById('f-laudo').value = i.laudo || ""; document.getElementById('f-parecer-externo').value = i.parecerExterno || ""; document.getElementById('f-status-select').value = i.status; document.getElementById('f-setor-select').value = i.setor; document.getElementById('f-prioridade').value = i.prioridade || "Média";
+                document.getElementById('f-entrada').value = i.dataEntrada || ""; document.getElementById('f-inicio').value = i.dataInicio || ""; document.getElementById('f-conclusao').value = i.dataConclusao || ""; document.getElementById('f-saida').value = i.dataSaida || "";
+                document.getElementById('f-interacoes').value = i.interacoes || "[]"; document.getElementById('f-pecas-hidden').value = i.pecas || "[]"; document.getElementById('f-checklist-hidden').value = i.checklist || "[]";
+                document.getElementById('f-img-1-b64').value = i.fotoAntes || ""; document.getElementById('f-img-1-box').innerHTML = i.fotoAntes ? `<img src="${i.fotoAntes}" class="w-full h-full object-cover">` : `<span class="text-gray-600 text-[8px]">Sem Foto</span>`;
+                document.getElementById('f-img-2-b64').value = i.fotoDepois || ""; document.getElementById('f-img-2-box').innerHTML = i.fotoDepois ? `<img src="${i.fotoDepois}" class="w-full h-full object-cover">` : `<span class="text-gray-600 text-[8px]">Sem Foto</span>`;
+                this.calcSaldoOS(); this.renderProntuario(JSON.parse(i.interacoes || "[]")); this.renderPecasOS(JSON.parse(i.pecas || "[]")); this.uiAjuste();
+            });
+        } else {
+            document.getElementById('f-id').value = ""; document.getElementById('os-id-display').innerText = "- NOVO";
+            if(cfg.numAuto === "true" || cfg.numAuto === true) { document.getElementById('f-id').placeholder = "Auto"; document.getElementById('f-id').readOnly = true; } else { document.getElementById('f-id').placeholder = "Digite o Nº"; document.getElementById('f-id').readOnly = false; }
+            ['f-cliente', 'f-telefone', 'f-email', 'f-modelo', 'f-serie', 'f-total', 'f-entrada-sinal', 'f-laudo', 'f-parecer-externo', 'f-inicio', 'f-conclusao', 'f-saida'].forEach(x => { document.getElementById(x).value = ""; });
+            document.getElementById('f-tipo').value = "OS"; document.getElementById('f-pagamento').value = "Pendente"; document.getElementById('f-tecnico').value = "Jorge Augusto"; document.getElementById('f-prioridade').value = "Média";
+            document.getElementById('f-entrada').value = new Date().toISOString().split('T')[0];
+            document.getElementById('f-interacoes').value = "[]"; document.getElementById('f-pecas-hidden').value = "[]"; document.getElementById('f-checklist-hidden').value = "[]";
+            document.getElementById('f-img-1-b64').value = ""; document.getElementById('f-img-1-box').innerHTML = `<span class="text-gray-600 text-[8px]">Sem Foto</span>`; document.getElementById('f-img-2-b64').value = ""; document.getElementById('f-img-2-box').innerHTML = `<span class="text-gray-600 text-[8px]">Sem Foto</span>`;
+            this.calcSaldoOS(); this.renderProntuario([]); this.renderPecasOS([]); this.uiAjuste();
+        }
+    },
+
+    // IMPRESSÃO OS E PIX
+    createPixPayload(chave, valor, nome, cidade) {
+        let p = "00020126" + String(32 + chave.length).padStart(2,'0') + "0014br.gov.bcb.pix01" + String(chave.length).padStart(2,'0') + chave + "520400005303986";
+        if(valor>0){let v=valor.toFixed(2); p+="54"+String(v.length).padStart(2,'0')+v;}
+        p += "5802BR59" + String(nome.length).padStart(2,'0')+nome + "60" + String(cidade.length).padStart(2,'0')+cidade + "62070503***6304";
+        let crc = 0xFFFF; for(let i=0;i<p.length;i++){crc^=p.charCodeAt(i)<<8; for(let j=0;j<8;j++){if((crc&0x8000)>0)crc=(crc<<1)^0x1021; else crc=crc<<1;}}
+        return p + (crc&0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+    },
+
+    async printOS() {
+        const id = document.getElementById('f-id').value; if(!id) return this.toast("SALVE A O.S. ANTES DE IMPRIMIR.", "error");
+        const i = await db.os.get(Number(id)); const cfg = await db.config.get(1);
+        const tot = Number(i.total||0); const ent = Number(i.entrada||0); const saldo = tot - ent;
+        let pixHTML = "";
+        if (cfg.chavePix && i.pagamento !== 'Pago' && saldo > 0) {
+            const strPix = this.createPixPayload(cfg.chavePix, saldo, (cfg.nomeEmpresa||"EMPRESA").substring(0,25).replace(/\s/g,'').toUpperCase(), "SAOPAULO");
+            const dataUrl = await QRCode.toDataURL(strPix, { width: 130, margin: 1 });
+            pixHTML = `<div style="text-align:center; border:2px dashed #10b981; padding:15px; border-radius:10px; margin-top:20px; background:#f0fdf4;"><b style="color:#10b981; font-size:16px;">PAGUE O SALDO VIA PIX</b><br><img src="${dataUrl}" style="margin:10px 0;"><br><span style="font-size:11px; color:#666;">Chave: <b>${cfg.chavePix}</b></span><br><span style="font-size:11px; color:#666;">Valor QR Code: R$ ${saldo.toFixed(2)}</span></div>`;
+        }
+        const pecas = JSON.parse(i.pecas || "[]"); let pecasHTML = "";
+        if(pecas.length > 0 && !["Design", "Diagramação"].includes(i.setor)) { pecasHTML = `<div class="box" style="margin-bottom:20px"><b>PEÇAS / INSUMOS APLICADOS:</b><br><ul style="margin:5px 0 0; padding-left:15px;">` + pecas.map(p => `<li>${p.qtd}x ${p.nome}</li>`).join("") + `</ul></div>`; }
+
+        const win = window.open('', 'PRINT');
+        win.document.write(`<html><head><style>body{font-family:'Segoe UI',sans-serif;padding:40px;line-height:1.6;color:#333;font-size:12px} .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #ffb347;padding-bottom:20px;margin-bottom:20px} .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px} .box{background:#fcfcfc;border:1px solid #eaeaea;padding:15px;border-radius:5px} .tot{font-size:24px;color:#ffb347;text-align:right;font-weight:900} .terms{margin-top:40px;font-size:10px;color:#666;border-top:1px dashed #ccc;padding-top:10px} * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }</style></head><body><div style="max-width:800px;margin:0 auto"><div class="head"><div><img src="Logotipo_nossoti.png" style="height:60px;margin-bottom:10px" onerror="this.style.display='none'"><br><span style="font-size:10px;color:#666"><b>${cfg.nomeEmpresa}</b><br>CNPJ: ${cfg.cnpjEmpresa || 'N/A'}<br>Tel: ${cfg.telEmpresa || 'N/A'}</span></div><div style="text-align:right"><h1 style="margin:0;font-size:24px;text-transform:uppercase;">${i.tipo === 'Orcamento' ? 'ORÇAMENTO' : 'ORDEM DE SERVIÇO'}</h1><p style="margin:5px 0;font-size:20px;color:#ffb347;font-weight:bold">#${String(i.id).padStart(5, '0')}</p></div></div><div class="grid-2"><div class="box"><b>DADOS DO CLIENTE:</b><br>${i.cliente}<br>Tel: ${i.telefone || '---'}<br>E-mail: ${i.email || '---'}</div><div class="box"><b>OPERACIONAL:</b><br>Data: ${i.dataEntrada ? i.dataEntrada.split('-').reverse().join('/') : '---'}<br>Setor: ${i.setor}<br>Técnico: ${i.tecnico || '---'}<br>Status Pgto: ${i.pagamento}</div></div><div class="box" style="margin-bottom:20px"><b>PROJETO / EQUIPAMENTO:</b><br>${i.modelo} - Ref: ${i.serie || '---'}</div>${pecasHTML}<div class="box" style="margin-bottom:20px;min-height:80px"><b>RESUMO DO ATENDIMENTO:</b><br>${(i.parecerExterno && i.parecerExterno.trim() !== '') ? i.parecerExterno.replace(/\n/g, '<br>') : '---'}</div><div style="display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; padding:20px; border:1px solid #ddd; border-radius:5px">${pixHTML}<div style="text-align:right;"><div style="font-size:14px; color:#666;">Valor Orçado: R$ ${tot.toFixed(2)}</div><div style="font-size:14px; color:#10b981; margin-bottom:10px;">Sinal/Pago: R$ ${ent.toFixed(2)}</div><div class="tot">SALDO DEVEDOR: R$ ${saldo.toFixed(2)}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px;text-align:center"><div style="border-top:1px solid #333;padding-top:5px;font-size:11px">Aprovação do Cliente</div><div style="border-top:1px solid #333;padding-top:5px;font-size:11px">Técnico Responsável</div></div><div class="terms"><b>TERMOS:</b> ${cfg.termosGarantia}</div></div><script>setTimeout(()=>{window.print();window.close();}, 800);<\/script></body></html>`);
+    },
+
+    // --- PAINEL MASTER (RELATORIOS E CONFIGS) ---
+    async renderHist() {
+        const q = document.getElementById('hist-search').value.toLowerCase(); const os = await db.os.toArray();
+        const filtered = os.filter(i => i.cliente.toLowerCase().includes(q) || String(i.id).includes(q) || (i.email && i.email.toLowerCase().includes(q))).reverse();
+        document.getElementById('hist-table-body').innerHTML = filtered.map(i => `<tr class="table-row border-b border-white/5" onclick="App.openOSModal(${i.id})"><td class="p-4">#${i.id} <br><span class="text-[9px] text-gray-500">${i.dataEntrada || '-'} <b class="text-[#ffb347]">${i.tipo === 'Orcamento'?'[ORÇ]':''}</b></span></td><td>${i.cliente} <br><span class="text-[9px] text-gray-500">${i.telefone || i.email || 'S/ Ctt'}</span></td><td>${i.setor} <br><span class="text-[9px] text-gray-500">${i.modelo || '-'}</span></td><td><span class="px-2 py-1 bg-white/10 rounded text-[9px] mr-1">${i.status}</span><span class="px-2 py-1 bg-white/10 rounded text-[9px] text-yellow-500">${i.pagamento}</span></td><td class="text-[#ffb347]">R$ ${Number(i.total).toFixed(2)}</td></tr>`).join("");
+    },
+
+    renderCharts(os, cfg, total, despTotal) {
+        const create = (id, type, data) => { if(this.charts[id]) this.charts[id].destroy(); this.charts[id] = new Chart(document.getElementById(id), { type, data, options: { plugins: { legend: { display: false } } } }); };
+        const setCont = {}; os.filter(x=>x.tipo!=='Orcamento').forEach(i => setCont[i.setor] = (setCont[i.setor] || 0) + 1);
+        create('chartSetores', 'doughnut', { labels: Object.keys(setCont), datasets: [{ data: Object.values(setCont), backgroundColor: ['#ffb347','#3b82f6','#a855f7','#10b981'], borderWidth: 0 }] });
+        create('chartSLA', 'pie', { labels: ['Ativas', 'Finalizadas'], datasets: [{ data: [os.filter(i=>i.status!=='Concluido'&&i.status!=='Entregue'&&i.tipo!=='Orcamento').length, os.filter(i=>(i.status==='Concluido'||i.status==='Entregue')&&i.tipo!=='Orcamento').length], backgroundColor: ['#ffb347', '#10b981'], borderWidth: 0 }] });
+        create('chartMeta', 'bar', { labels: ['Faturamento', 'Despesas'], datasets: [{ data: [total, despTotal], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 10 }] });
+    },
+
+    renderAdminLists(cfg, users, snips) {
+        document.getElementById('user-list').innerHTML = users.map(u => `<div class="flex justify-between bg-white/5 p-2 rounded text-[10px] items-center"><span>${u.login} <b class="text-[#ffb347]">(${u.perfil})</b></span><button onclick="App.delUser(${u.id})" class="text-red-500 hover:scale-110">X</button></div>`).join("");
+        document.getElementById('admin-snippet-list').innerHTML = snips.map(s => `<div class="flex justify-between bg-white/5 p-2 rounded text-[10px] items-center"><span>${s.texto.substring(0,30)}...</span><button onclick="App.delSnippet(${s.id})" class="text-red-500 hover:scale-110">X</button></div>`).join("");
+        document.getElementById('cfg-nome').value = cfg.nomeEmpresa || ""; document.getElementById('cfg-cnpj').value = cfg.cnpjEmpresa || ""; document.getElementById('cfg-end').value = cfg.endEmpresa || ""; document.getElementById('cfg-tel').value = cfg.telEmpresa || ""; document.getElementById('cfg-pix').value = cfg.chavePix || ""; document.getElementById('cfg-meta').value = cfg.metaMensal; 
+        const selectLogin = document.getElementById('cfg-login-toggle'); if(selectLogin) selectLogin.value = cfg.loginAtivo.toString();
+        const selectAvisos = document.getElementById('cfg-avisos'); if(selectAvisos) selectAvisos.value = cfg.avisosVisuais.toString();
+        document.getElementById('cfg-termos').value = cfg.termosGarantia;
+        if(document.getElementById('cfg-os-auto')) document.getElementById('cfg-os-auto').value = (cfg.numAuto === undefined ? "true" : cfg.numAuto.toString());
+        if(document.getElementById('cfg-os-seq')) document.getElementById('cfg-os-seq').value = cfg.seqOS || 1;
+    },
+
+    async addUser() { const log = document.getElementById('new-user-login').value, pas = document.getElementById('new-user-pass').value, perf = document.getElementById('new-user-role').value; if(log && pas) { await db.usuarios.add({ login: log, senha: pas, nome: log, perfil: perf }); this.safeRefresh(); await this.pushToCloud(); document.getElementById('new-user-login').value = ""; document.getElementById('new-user-pass').value = ""; this.toast("Usuário Criado");} },
+    async delUser(id) { await db.usuarios.delete(id); this.safeRefresh(); await this.pushToCloud(); this.toast("Usuário Excluído");},
+    async addSnippet() { const txt = document.getElementById('new-snippet-text').value; if(!txt) return; await db.snippets.add({ texto: txt, tipo: "ambos" }); document.getElementById('new-snippet-text').value = ""; this.safeRefresh(); await this.pushToCloud(); this.toast("Texto Salvo");},
+    async delSnippet(id) { await db.snippets.delete(id); this.safeRefresh(); await this.pushToCloud(); this.toast("Texto Removido");},
+
+    async saveAdmin() {
+        const loginEl = document.getElementById('cfg-login-toggle'); const loginAtv = loginEl ? (loginEl.value === 'true') : false;
+        const avisosEl = document.getElementById('cfg-avisos'); const avisosAtv = avisosEl ? (avisosEl.value === 'true') : true;
+        const payload = {
+            nomeEmpresa: document.getElementById('cfg-nome').value, cnpjEmpresa: document.getElementById('cfg-cnpj').value, endEmpresa: document.getElementById('cfg-end').value, telEmpresa: document.getElementById('cfg-tel').value,
+            chavePix: document.getElementById('cfg-pix').value, metaMensal: parseFloat(document.getElementById('cfg-meta').value), termosGarantia: document.getElementById('cfg-termos').value, avisosVisuais: avisosAtv, loginAtivo: loginAtv,
+            numAuto: document.getElementById('cfg-os-auto') ? document.getElementById('cfg-os-auto').value : "true",
+            seqOS: document.getElementById('cfg-os-seq') ? parseInt(document.getElementById('cfg-os-seq').value) : 1
+        };
+        await db.config.update(1, payload); await this.pushToCloud(); this.toast("Configurações Salvas!"); this.safeRefresh();
+    },
+
+    async exportReport(format) {
+        const mod = document.getElementById('report-mod').value; const start = document.getElementById('report-start').value; const end = document.getElementById('report-end').value;
+        let data = []; let fname = "";
+        if (mod === 'estoque') { data = await db.estoque.toArray(); fname = `Nexus_Estoque_${new Date().toISOString().split('T')[0].replace(/-/g,'')}`; } 
+        else if (mod === 'fin') { data = await db.despesas.toArray(); fname = `Nexus_Despesas_${new Date().toISOString().split('T')[0].replace(/-/g,'')}`; }
+        else if (mod === 'cont') { data = await db.contratos.toArray(); fname = `Nexus_Contratos_${new Date().toISOString().split('T')[0].replace(/-/g,'')}`; }
+        else if (mod === 'rh') { data = await db.ponto.toArray(); fname = `Nexus_Ponto_${new Date().toISOString().split('T')[0].replace(/-/g,'')}`; }
+        else if (mod === 'cli') { data = await db.clientes.toArray(); fname = `Nexus_Clientes_${new Date().toISOString().split('T')[0].replace(/-/g,'')}`; }
+        else {
+            let osData = await db.os.toArray();
+            if(mod === 'os_orc') osData = osData.filter(i => i.tipo === 'Orcamento'); else osData = osData.filter(i => i.tipo !== 'Orcamento');
+            if(start) osData = osData.filter(i => i.dataEntrada >= start); if(end) osData = osData.filter(i => i.dataEntrada <= end);
+            data = osData; fname = `Nexus_OS_${new Date().toISOString().split('T')[0].replace(/-/g,'')}`;
+        }
+        
+        if(format === 'json') { 
+            const fullData = { os: await db.os.toArray(), config: await db.config.toArray(), usuarios: await db.usuarios.toArray(), estoque: await db.estoque.toArray(), snippets: await db.snippets.toArray(), despesas: await db.despesas.toArray(), contratos: await db.contratos.toArray(), ponto: await db.ponto.toArray(), clientes: await db.clientes.toArray() };
+            const blob = new Blob([JSON.stringify(fullData)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Cofre_Completo_${new Date().toISOString().split('T')[0]}.json`; a.click(); 
+            this.toast("Backup JSON baixado.");
+        } 
+        else if (format === 'csv') {
+            let csvStr = "";
+            if (mod === 'estoque') { csvStr = "ID,NOME,QTD,MINIMO,CUSTO\n"; data.forEach(i => { csvStr += `${i.id},${i.nome},${i.qtd},${i.min},${i.preco}\n`; }); } 
+            else if (mod === 'fin') { csvStr = "ID,DATA,DESCRIÇÃO,CATEGORIA,VALOR\n"; data.forEach(i => { csvStr += `${i.id},${i.data},${i.descricao},${i.categoria},${i.valor}\n`; }); } 
+            else if (mod === 'cont') { csvStr = "ID,CLIENTE,VENCIMENTO,STATUS,VALOR\n"; data.forEach(i => { csvStr += `${i.id},${i.cliente},${i.diaVencimento},${i.status},${i.valor}\n`; }); } 
+            else if (mod === 'rh') { csvStr = "ID,USUÁRIO,DATA,EVENTO,HORA\n"; data.forEach(i => { csvStr += `${i.id},${i.usuario},${i.data},${i.evento},${i.timestamp}\n`; }); } 
+            else if (mod === 'cli') { csvStr = "ID,NOME,DOC,TEL,EMAIL\n"; data.forEach(i => { csvStr += `${i.id},${i.nome},${i.documento},${i.telefone},${i.email}\n`; }); } 
+            else { csvStr = "ID,TIPO,CLIENTE,SETOR,MODELO,VALOR,SINAL,STATUS,PGTO,DATA_ENTRADA\n"; data.forEach(i => { csvStr += `${i.id},${i.tipo||'OS'},${i.cliente||''},${i.setor||''},${i.modelo||''},${i.total||0},${i.entrada||0},${i.status||''},${i.pagamento||''},${i.dataEntrada||''}\n`; }); }
+            const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${fname}.csv`; link.click();
+            this.toast("Relatório CSV gerado.");
+        }
+        else if (format === 'txt') {
+            let txtStr = `RELATÓRIO GERENCIAL NEXUS (${mod.toUpperCase()})\nPeríodo: ${start || 'Sempre'} até ${end || 'Hoje'}\nGerado em: ${new Date().toLocaleString()}\n\n`;
+            if(mod === 'estoque') { data.forEach(i => { txtStr += `[Item ${i.id}] ${i.nome} | Qtd: ${i.qtd} | Min: ${i.min} | Custo: R$ ${i.preco}\n`; }); } 
+            else if(mod === 'fin') { data.forEach(i => { txtStr += `[${i.data}] ${i.descricao} | ${i.categoria} | R$ ${i.valor}\n`; }); } 
+            else if(mod === 'cont') { data.forEach(i => { txtStr += `[Contrato ${i.id}] ${i.cliente} | Dia ${i.diaVencimento} | ${i.status} | R$ ${i.valor}\n`; }); } 
+            else if(mod === 'rh') { data.forEach(i => { txtStr += `[${i.data} ${i.timestamp}] ${i.usuario} | ${i.evento}\n`; }); } 
+            else if(mod === 'cli') { data.forEach(i => { txtStr += `[${i.id}] ${i.nome} | ${i.documento} | Tel: ${i.telefone}\n`; }); } 
+            else { data.forEach(i => { txtStr += `[${i.tipo||'OS'}] #${i.id} - ${i.cliente} | Setor: ${i.setor} | Status: ${i.status} | Pgto: ${i.pagamento} | Total: R$ ${i.total} | Sinal: R$ ${i.entrada}\n`; }); }
+            const blob = new Blob([txtStr], { type: 'text/plain;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${fname}.txt`; link.click();
+            this.toast("Relatório TXT gerado.");
+        }
+    },
+
+    async printReport() {
+        const mod = document.getElementById('report-mod').value; const start = document.getElementById('report-start').value; const end = document.getElementById('report-end').value;
+        let data = []; let trs = ""; let head = "";
+
+        if (mod === 'estoque') {
+            data = await db.estoque.toArray(); head = `<tr><th>ID</th><th>Insumo / Peça</th><th>Qtd Atual</th><th>Custo (R$)</th><th>Total Patrimonial</th></tr>`; trs = data.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">#${i.id}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.nome}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.qtd}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.preco).toFixed(2)}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${(Number(i.preco)*i.qtd).toFixed(2)}</td></tr>`).join("");
+        } else if (mod === 'fin') {
+            data = await db.despesas.toArray(); if(start) data = data.filter(i => i.data >= start); if(end) data = data.filter(i => i.data <= end); head = `<tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr>`; trs = data.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">${i.data}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.descricao}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.categoria}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.valor).toFixed(2)}</td></tr>`).join("");
+        } else if (mod === 'cont') {
+            data = await db.contratos.toArray(); head = `<tr><th>ID</th><th>Cliente</th><th>Vencimento</th><th>Status</th><th>Valor Mensal</th></tr>`; trs = data.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">#${i.id}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.cliente}</td><td style="border-bottom:1px solid #ccc;padding:5px">Dia ${i.diaVencimento}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.status}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.valor).toFixed(2)}</td></tr>`).join("");
+        } else if (mod === 'rh') {
+            data = await db.ponto.toArray(); head = `<tr><th>Data</th><th>Usuário</th><th>Evento</th><th>Hora</th></tr>`; trs = data.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">${i.data}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.usuario}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.evento}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.timestamp}</td></tr>`).join("");
+        } else if (mod === 'cli') {
+            data = await db.clientes.toArray(); head = `<tr><th>Nome</th><th>Doc</th><th>Tel</th><th>E-mail</th></tr>`; trs = data.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">${i.nome}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.documento}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.telefone}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.email}</td></tr>`).join("");
+        } else {
+            let osData = await db.os.toArray();
+            if(mod === 'os_orc') osData = osData.filter(i => i.tipo === 'Orcamento'); else osData = osData.filter(i => i.tipo !== 'Orcamento');
+            if(start) osData = osData.filter(i => i.dataEntrada >= start); if(end) osData = osData.filter(i => i.dataEntrada <= end);
+            data = osData; head = `<tr><th>ID</th><th>Cliente</th><th>Setor</th><th>Status</th><th>Pagamento</th><th>Total</th><th>Sinal</th></tr>`; trs = data.map(i => `<tr><td style="border-bottom:1px solid #ccc;padding:5px">#${i.id}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.cliente}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.setor}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.status}</td><td style="border-bottom:1px solid #ccc;padding:5px">${i.pagamento}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.total).toFixed(2)}</td><td style="border-bottom:1px solid #ccc;padding:5px">R$ ${Number(i.entrada||0).toFixed(2)}</td></tr>`).join("");
+        }
+
+        const win = window.open('', 'PRINT');
+        win.document.write(`<html><head><style>body{font-family:sans-serif;padding:20px} table{width:100%;border-collapse:collapse;margin-top:20px; font-size:12px;} th{background:#eee;padding:10px;text-align:left}</style></head><body><h1>Relatório Avançado: ${mod.toUpperCase()}</h1><p>Filtro de Data: ${start || 'Início'} até ${end || 'Hoje'}</p><p>Gerado em: ${new Date().toLocaleString()}</p><table><thead>${head}</thead><tbody>${trs}</tbody></table><script>setTimeout(()=>{window.print();window.close();},800);<\/script></body></html>`);
+        this.toast("PDF Gerencial em modo de impressão.");
+    },
+
+    async handleImport(input) {
+        if(input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(confirm("ATENÇÃO: A restauração apagará os dados atuais da tela. Deseja continuar?")) {
+                        await db.os.clear(); await db.config.clear(); await db.usuarios.clear(); await db.estoque.clear(); await db.snippets.clear(); await db.despesas.clear(); await db.contratos.clear(); await db.ponto.clear(); await db.clientes.clear();
+                        if(data.os) await db.os.bulkAdd(data.os); if(data.config) await db.config.bulkAdd(data.config); if(data.usuarios) await db.usuarios.bulkAdd(data.usuarios); if(data.estoque) await db.estoque.bulkAdd(data.estoque); if(data.snippets) await db.snippets.bulkAdd(data.snippets); if(data.despesas) await db.despesas.bulkAdd(data.despesas); if(data.contratos) await db.contratos.bulkAdd(data.contratos); if(data.ponto) await db.ponto.bulkAdd(data.ponto); if(data.clientes) await db.clientes.bulkAdd(data.clientes);
+                        App.safeRefresh(); App.pushToCloud(); App.toast("Banco Restaurado!");
+                    }
+                } catch(err) { App.toast("Erro ao ler JSON.", "error"); }
+            }
+            reader.readAsText(input.files[0]);
+        }
+    },
+    closeOSModal() { document.getElementById('modal-os').classList.add('hidden'); }
+};
+window.onload = () => App.init();
+</script>
+</body>
+</html>
